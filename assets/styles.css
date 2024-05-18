@@ -1,7 +1,16 @@
-h1 {
-    color: hotpink;
+.outer-container {
+    margin-top: 1rem;
 }
 
-.outer-container {
-    margin-top: 4rem;
+.main-plot {
+    height: 30rem;
+}
+
+.selection-area {
+    height: 30rem;
+}
+
+.auxiliary-plot {
+    height: 18rem;
+    margin-top: 1rem;
 }
