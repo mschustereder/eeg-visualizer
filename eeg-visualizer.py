@@ -1,4 +1,4 @@
-from dash import Dash, html, dash_table
+from dash import Dash, html, Input, Output, callback, dcc
 import pandas as pd
 import dash_bootstrap_components as dbc
 
@@ -15,7 +15,7 @@ main_plot_card = dbc.Card(
     [
         dbc.CardBody(
             [
-                html.H4("Main Plot Area", className="card-title"),
+                html.H4(className="card-title", id='main-plot-title'),
                 html.P(
                     "Here there will be a 'topoplot' or a spectrogram. Possibly others.",
                     className="card-text",
@@ -26,6 +26,17 @@ main_plot_card = dbc.Card(
     className='main-plot'
 )
 
+selection_for_main_plot = dbc.Card([
+    dbc.CardBody([
+        html.H5("Main Plot Parameters", className="card-title"),
+        html.Div([
+            'Choose Main Plot',
+            dcc.Dropdown(['Topoplot', 'Spectrogram'], 'Topoplot', id='main-plot-selection', clearable=False)
+        ]),
+        html.Div(id='brainwave-selection'),
+    ])
+])
+
 selection_area = dbc.Card(
     [
         dbc.CardBody(
@@ -34,9 +45,14 @@ selection_area = dbc.Card(
                 html.P(
                     "Here one will be able to choose parameters for the plots. Etc.",
                     className="card-text",
-                )
+                ),
+                selection_for_main_plot,
+                html.Div([
+                    'Choose Auxiliary Plot',
+                    dcc.Dropdown(['ECG', 'Other'], 'ECG', id='auxiliary-plot-selection', clearable=False)
+                ])
             ]
-        ),
+        )
     ],
     className='selection-area'
 )
@@ -45,7 +61,7 @@ auxiliary_plot_card = dbc.Card(
     [
         dbc.CardBody(
             [
-                html.H4("Auxiliary Plot Area", className="card-title"),
+                html.H4("Auxiliary Plot Area", className="card-title", id='auxiliary-plot-title'),
                 html.P(
                     "Here there will be some form of line plot. ECG for example, or RR Plot.",
                     className="card-text",
@@ -68,6 +84,31 @@ app.layout = dbc.Container([
         ])
     ], className='outer-container')
 ], fluid=True)
+
+@callback(
+    Output('main-plot-title', 'children'),
+    Input('main-plot-selection', 'value')
+)
+def update_main_plot(value):
+    return value
+
+@callback(
+    Output('brainwave-selection', 'children'),
+    Input('main-plot-selection', 'value')
+)
+def show_brainwave_selection(value):
+    brainwave_selection = [
+                    'Choose Brainwave',
+                    dcc.Dropdown(['Alpha', 'Beta', 'Delta', 'Theta'], 'Alpha', id='brainwave-selection-dropdown', clearable=False)
+                ]
+    return brainwave_selection if value == 'Topoplot' else []
+
+@callback(
+    Output('auxiliary-plot-title', 'children'),
+    Input('auxiliary-plot-selection', 'value')
+)
+def update_auxiliary_plot(value):
+    return value
 
 if __name__ == '__main__':
     app.run(debug=True)
