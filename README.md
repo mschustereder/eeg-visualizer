@@ -14,3 +14,5 @@ If new packages are added or updated, do so with pip in the directory of the ven
 pip freeze > requirements.txt
 
 Do not push venv folder (is already added to .gitignore)
+
+If you get an error where "from astropy.stats import LombScargle" fails, change this import line in \venv\lib\site-packages\hrvanalysis\extract_features.py to "from astropy.timeseries import LombScargle"
