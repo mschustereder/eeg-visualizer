@@ -9,13 +9,12 @@ from typing import Dict, Tuple
 from datetime import datetime
 import time
 
-
 SAMPLE_COUNT_MAX_QUEUE = 100
 
 @dataclass
-class DataQueue:
-    data_queue : queue.Queue = queue.Queue()
-    data_queue_lock : threading.Lock = threading.Lock()
+class DataQueueStruct:
+    data_queue : queue.Queue = field(default_factory=queue.Queue)
+    data_queue_lock : threading.Lock = field(default_factory=threading.Lock)
     queue_length : int = 0
 
 
@@ -40,8 +39,11 @@ class LslHandler:
         queue = self.active_streams[stream][1]
         while True: 
                 with queue.data_queue_lock:
-                    queue.data_queue.put(self.active_streams[stream][0].pull_sample(timeout = 0.0))
-                    queue.queue_length += 1
+                    data = self.active_streams[stream][0].pull_sample(timeout = 0.0)
+                    if data != (None,None):
+                        queue.data_queue.put(data)
+                        # print(f"added {data} to queue of stream {self.get_stream_name(stream)}")
+                        queue.queue_length += 1
                     if queue.queue_length > SAMPLE_COUNT_MAX_QUEUE:
                         while not queue.data_queue.empty(): #this mechanism is probably not really efficient and should be overthought
                             queue.data_queue.get()
@@ -50,7 +52,7 @@ class LslHandler:
 
     def connect_to_specific_lsl_stream(self, stream : StreamInfo):
         new_inlet = pylsl.StreamInlet(stream)
-        self.active_streams[stream] = (new_inlet, DataQueue())
+        self.active_streams[stream] = (new_inlet, DataQueueStruct())
     
     def start_data_recording_thread(self, stream: StreamInfo):
         assert stream in self.active_streams
@@ -68,24 +70,10 @@ class LslHandler:
                 pass
         return data_sample #if the queue was empty it returns None
     
-
-
-def main():
-    lslhandler = LslHandler()
-    all_streams = lslhandler.get_all_lsl_streams()
-    print(lslhandler.get_all_lsl_streams_as_infostring())
-    assert len(all_streams) != 0
-    for stream_index in range(len(all_streams)):
-        lslhandler.connect_to_specific_lsl_stream(all_streams[stream_index])
-        lslhandler.start_data_recording_thread(all_streams[stream_index])
-
-    while True:
-        for stream_index in range(len(all_streams)):
-            data = lslhandler.get_data_sample(all_streams[stream_index])
-            if data != None and data != (None,None):
-                print(data)
-
-
-
-if __name__ == '__main__':
-    main()
+    def get_stream_by_name(self, name):
+        for stream in self.active_streams:
+            if stream.name() == name:
+                return stream
+            
+        return None
+    
