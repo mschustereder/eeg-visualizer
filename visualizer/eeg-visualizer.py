@@ -16,9 +16,12 @@ main_plot_card = dbc.Card(
         dbc.CardBody(
             [
                 html.H4(className="card-title", id='main-plot-title'),
-                html.P(
-                    "Here there will be a 'topoplot' or a spectrogram. Possibly others.",
-                    className="card-text",
+                dcc.Graph(id='main-plot',
+                          config={'staticPlot': True}), #callback of dropdown will initialize graph
+                dcc.Interval(
+                    id='interval-main-plot',
+                    interval=100, # in milliseconds
+                    n_intervals=0
                 )
             ]
         ),
@@ -85,12 +88,6 @@ app.layout = dbc.Container([
     ], className='outer-container')
 ], fluid=True)
 
-@callback(
-    Output('main-plot-title', 'children'),
-    Input('main-plot-selection', 'value')
-)
-def update_main_plot(value):
-    return value
 
 @callback(
     Output('brainwave-selection', 'children'),
@@ -103,12 +100,7 @@ def show_brainwave_selection(value):
                 ]
     return brainwave_selection if value == 'Topoplot' else []
 
-@callback(
-    Output('auxiliary-plot-title', 'children'),
-    Input('auxiliary-plot-selection', 'value')
-)
-def update_auxiliary_plot(value):
-    return value
+from graph_callbacks import *
 
 if __name__ == '__main__':
     app.run(debug=True)
