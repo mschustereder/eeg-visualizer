@@ -43,10 +43,23 @@ def get_color(current_plot):
 )
 def update_main_plot(n_intervals, current_plot):
     global graph_frame
+    global buffer_frame
+    graph_frame["time"].extend(buffer_frame["time"])
+    graph_frame["value"].extend(buffer_frame["value"])
+    buffer_frame = {"time" : [], "value" : []}
+
+    if len(graph_frame["time"]) > 10000:
+        print("cut")
+        graph_frame["time"] = graph_frame["time"][10000:]
+        graph_frame["value"] = graph_frame["value"][10000:]
+
     if current_plot == 'FrequencySignal':
-        N = 1024
         time = graph_frame["time"]
         values = graph_frame["value"]
+        N = 1024
+        if len(time) > N:
+            time = time[N:]
+            values = values[N:]
 
         sampling_rate = 100
 
@@ -54,15 +67,6 @@ def update_main_plot(n_intervals, current_plot):
 
         return go.Figure(data=go.Scatter(x=frequency, y=fft_magnitude_normalized, mode='lines', line_color=get_color(current_plot), line_width=1))
     else:
-        global buffer_frame
-        graph_frame["time"].extend(buffer_frame["time"])
-        graph_frame["value"].extend(buffer_frame["value"])
-        if len(graph_frame["time"]) > 10000:
-            print("cut")
-            graph_frame["time"] = graph_frame["time"][10000:]
-            graph_frame["value"] = graph_frame["value"][10000:]
-        buffer_frame = {"time" : [], "value" : []}
-
         return go.Figure(data=go.Scatter(x=graph_frame["time"], y=graph_frame["value"], mode='lines', line_color=get_color(current_plot), line_width=1), layout_yaxis_range=[0,1], layout_xaxis_range=get_x_range())
 
 @callback(
