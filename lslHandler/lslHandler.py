@@ -40,8 +40,7 @@ class LslHandler:
         queue = self.active_streams[stream][1]
         while True: 
                 with queue.data_queue_lock:
-                    print("got lock")
-                    queue.data_queue.put(self.active_streams[stream][0].pull_sample())
+                    queue.data_queue.put(self.active_streams[stream][0].pull_sample(timeout = 0.0))
                     queue.queue_length += 1
                     if queue.queue_length > SAMPLE_COUNT_MAX_QUEUE:
                         while not queue.data_queue.empty(): #this mechanism is probably not really efficient and should be overthought
@@ -76,13 +75,15 @@ def main():
     all_streams = lslhandler.get_all_lsl_streams()
     print(lslhandler.get_all_lsl_streams_as_infostring())
     assert len(all_streams) != 0
-    lslhandler.connect_to_specific_lsl_stream(all_streams[0])
-    lslhandler.start_data_recording_thread(all_streams[0])
+    for stream_index in range(len(all_streams)):
+        lslhandler.connect_to_specific_lsl_stream(all_streams[stream_index])
+        lslhandler.start_data_recording_thread(all_streams[stream_index])
 
-    print("starting to get data")
     while True:
-        data = lslhandler.get_data_sample(all_streams[0])
-        print(data)
+        for stream_index in range(len(all_streams)):
+            data = lslhandler.get_data_sample(all_streams[stream_index])
+            if data != None and data != (None,None):
+                print(data)
 
 
 
