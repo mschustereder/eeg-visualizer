@@ -61,13 +61,18 @@ def update_main_plot(n_intervals, current_plot):
             time = time[N:]
             values = values[N:]
 
-        sampling_rate = 100
+        sampling_rate = 500
 
         frequency, fft_magnitude_normalized = calculate_fft(values, sampling_rate)
 
-        return go.Figure(data=go.Scatter(x=frequency, y=fft_magnitude_normalized, mode='lines', line_color=get_color(current_plot), line_width=1))
+        return go.Figure(data=go.Scatter(x=frequency, y=fft_magnitude_normalized, mode='lines', line_color=get_color(current_plot), line_width=1), layout=dict(
+            xaxis=dict(range=[0, 5], title='Frequency in Hz')
+        ))
     else:
-        return go.Figure(data=go.Scatter(x=graph_frame["time"], y=graph_frame["value"], mode='lines', line_color=get_color(current_plot), line_width=1), layout_yaxis_range=[0,1], layout_xaxis_range=get_x_range())
+        return go.Figure(data=go.Scatter(x=graph_frame["time"], y=graph_frame["value"], mode='lines', line_color=get_color(current_plot), line_width=1), layout=dict(
+            yaxis=dict(range=[-1, 1]),
+            xaxis=dict(range=get_x_range(), title='Time in ms')
+        ))
 
 @callback(
     Input('interval-data-gen', 'n_intervals'),
@@ -77,7 +82,7 @@ def add_data(n_intervals):
     global buffer_frame
     buffer_frame["time"].append(start_interval)
     start_interval += 1
-    frequency_of_sine = 1 / 35
+    frequency_of_sine = 1 / 250
     sine_value = np.sin(2 * np.pi * frequency_of_sine *start_interval)
     buffer_frame["value"].append(sine_value)
     # buffer_frame["value"].append(random.random())
