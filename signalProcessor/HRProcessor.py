@@ -1,4 +1,4 @@
-from  lslHandler.lslHandler import LslHandler
+from lslHandler.lslHandler import LslHandler
 from pylsl import StreamInfo
 from hrvanalysis import get_time_domain_features, get_poincare_plot_features
 from hrvanalysis.preprocessing import interpolate_nan_values, remove_ectopic_beats
@@ -83,7 +83,3 @@ def main():
             print(data)
 
         
-
-
-if __name__ == '__main__':
-    main()
