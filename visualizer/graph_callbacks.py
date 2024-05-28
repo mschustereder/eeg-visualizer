@@ -5,22 +5,6 @@ import random
 from globals import *
 
 
-# @callback(
-#     Output('main-plot', 'figure'),
-#     Input('main-plot-selection', 'value')
-# )
-# def change_main_plot(value):
-#     print(value)
-
-#     fig = None
-    
-#     if value == "Topoplot":
-#         fig = px.line()
-#     else:
-#         fig = px.line()
-
-#     return fig
-
 def get_x_range():
     range_x=[0, 10000]
     
@@ -29,12 +13,15 @@ def get_x_range():
 
     return range_x
 
-def get_color(current_plot):
+def topoPlot():
+    global buffer_frame
+    global graph_frame 
+    return go.Figure(data=go.Scatter(x=graph_frame["time"], y=graph_frame["value"], mode='lines', line_color="Blue", line_width=0.5), layout_yaxis_range=[0,1], layout_xaxis_range=get_x_range())
 
-    if (current_plot == "Topoplot"):
-        return  "Blue"
-    else:
-        return  "Red"
+def spectrumPlot():
+    global buffer_frame
+    global graph_frame 
+    return go.Figure(data=go.Scatter(x=graph_frame["time"], y=graph_frame["value"], mode='lines', line_color="Red", line_width=0.5), layout_yaxis_range=[0,1], layout_xaxis_range=get_x_range())
     
 @callback(
     Output('main-plot', 'figure'),
@@ -52,7 +39,10 @@ def update_main_plot(n_intervals, current_plot):
         graph_frame["value"] = graph_frame["value"][10000:]
     buffer_frame = {"time" : [], "value" : []}
 
-    return go.Figure(data=go.Scatter(x=graph_frame["time"], y=graph_frame["value"], mode='lines', line_color=get_color(current_plot), line_width=1), layout_yaxis_range=[0,1], layout_xaxis_range=get_x_range())
+    if (current_plot == "Topoplot"):
+        return topoPlot()
+    else:
+        return spectrumPlot()
 
 
 @callback(

@@ -25,7 +25,7 @@ main_plot_card = dbc.Card(
                 ),
                 dcc.Interval(
                     id='interval-graph',
-                    interval=50, # in milliseconds
+                    interval=100, # in milliseconds
                     n_intervals=0
                 ),
                 dcc.Store(id="store-data", data = {"time" : [], "value" : []}),
