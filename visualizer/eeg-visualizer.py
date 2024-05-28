@@ -19,10 +19,16 @@ main_plot_card = dbc.Card(
                 dcc.Graph(id='main-plot',
                           config={'staticPlot': True}), #callback of dropdown will initialize graph
                 dcc.Interval(
-                    id='interval-main-plot',
-                    interval=100, # in milliseconds
+                    id='interval-data-gen',
+                    interval=1, # in milliseconds
                     n_intervals=0
-                )
+                ),
+                dcc.Interval(
+                    id='interval-graph',
+                    interval=50, # in milliseconds
+                    n_intervals=0
+                ),
+                dcc.Store(id="store-data", data = {"time" : [], "value" : []}),
             ]
         ),
     ],
