@@ -11,13 +11,14 @@ header_bar = dbc.NavbarSimple(
     dark=True,
 )
 
+main_plot = dcc.Graph(id='main-plot', config={'staticPlot': True}) #callback of dropdown will initialize graph
+
 main_plot_card = dbc.Card(
     [
         dbc.CardBody(
             [
                 html.H4(className="card-title", id='main-plot-title'),
-                dcc.Graph(id='main-plot',
-                          config={'staticPlot': True}), #callback of dropdown will initialize graph
+                main_plot,
                 dcc.Interval(
                     id='interval-data-gen',
                     interval=1, # in milliseconds
@@ -40,7 +41,7 @@ selection_for_main_plot = dbc.Card([
         html.H5("Main Plot Parameters", className="card-title"),
         html.Div([
             'Choose Main Plot',
-            dcc.Dropdown(['Topoplot', 'Spectrogram'], 'Topoplot', id='main-plot-selection', clearable=False)
+            dcc.Dropdown(['TimeSignal', 'FrequencySignal', 'Topoplot', 'Spectrogram'], 'TimeSignal', id='main-plot-selection', clearable=False)
         ]),
         html.Div(id='brainwave-selection'),
     ])

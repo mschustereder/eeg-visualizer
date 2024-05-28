@@ -5,22 +5,6 @@ import numpy as np
 import random
 from globals import *
 
-# @callback(
-#     Output('main-plot', 'figure'),
-#     Input('main-plot-selection', 'value')
-# )
-# def change_main_plot(value):
-#     print(value)
-
-#     fig = None
-    
-#     if value == "Topoplot":
-#         fig = px.line()
-#     else:
-#         fig = px.line()
-
-#     return fig
-
 def get_next_lowest_power_of_two(num):
     return 2 ** (num - 1).bit_length()
 
@@ -45,10 +29,12 @@ def get_x_range():
     return range_x
 
 def get_color(current_plot):
-    if (current_plot == "Topoplot"):
+    if current_plot == "TimeSignal":
         return  "Blue"
-    else:
+    elif current_plot == "FrequencySignal":
         return  "Red"
+    else:
+        return "Green"
     
 @callback(
     Output('main-plot', 'figure'),
@@ -56,18 +42,28 @@ def get_color(current_plot):
     State('main-plot-selection', 'value')
 )
 def update_main_plot(n_intervals, current_plot):
-    global buffer_frame
-    global graph_frame 
-    graph_frame["time"].extend(buffer_frame["time"])
-    graph_frame["value"].extend(buffer_frame["value"])
-    if len(graph_frame["time"]) > 10000:
-        print("cut")
-        graph_frame["time"] = graph_frame["time"][10000:]
-        graph_frame["value"] = graph_frame["value"][10000:]
-    buffer_frame = {"time" : [], "value" : []}
+    global graph_frame
+    if current_plot == 'FrequencySignal':
+        N = 1024
+        time = graph_frame["time"]
+        values = graph_frame["value"]
 
-    return go.Figure(data=go.Scatter(x=graph_frame["time"], y=graph_frame["value"], mode='lines', line_color=get_color(current_plot), line_width=1), layout_yaxis_range=[0,1], layout_xaxis_range=get_x_range())
+        sampling_rate = 100
 
+        frequency, fft_magnitude_normalized = calculate_fft(values, sampling_rate)
+
+        return go.Figure(data=go.Scatter(x=frequency, y=fft_magnitude_normalized, mode='lines', line_color=get_color(current_plot), line_width=1))
+    else:
+        global buffer_frame
+        graph_frame["time"].extend(buffer_frame["time"])
+        graph_frame["value"].extend(buffer_frame["value"])
+        if len(graph_frame["time"]) > 10000:
+            print("cut")
+            graph_frame["time"] = graph_frame["time"][10000:]
+            graph_frame["value"] = graph_frame["value"][10000:]
+        buffer_frame = {"time" : [], "value" : []}
+
+        return go.Figure(data=go.Scatter(x=graph_frame["time"], y=graph_frame["value"], mode='lines', line_color=get_color(current_plot), line_width=1), layout_yaxis_range=[0,1], layout_xaxis_range=get_x_range())
 
 @callback(
     Input('interval-data-gen', 'n_intervals'),
@@ -77,7 +73,10 @@ def add_data(n_intervals):
     global buffer_frame
     buffer_frame["time"].append(start_interval)
     start_interval += 1
-    buffer_frame["value"].append(random.random())
+    frequency_of_sine = 1 / 35
+    sine_value = np.sin(2 * np.pi * frequency_of_sine *start_interval)
+    buffer_frame["value"].append(sine_value)
+    # buffer_frame["value"].append(random.random())
 
 
 @callback(
