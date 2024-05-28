@@ -28,13 +28,11 @@ def main():
         info = StreamInfo(stream["info"]["name"][0], stream["info"]["type"][0], int(stream["info"]["channel_count"][0]), float(stream["info"]["nominal_srate"][0]), stream["info"]["channel_format"][0])
         channels_info = info.desc().append_child("channels")
         
-        #add the meta data for all channels
-        for channel_top in stream["info"]["desc"][0]["channels"]:
-            channel = channel_top["channel"][0]
-            channels_info.append_child("channel")
-            channels_info.append_child_value("label", channel["label"][0])
-            channels_info.append_child_value("unit", channel["unit"][0])
-            channels_info.append_child_value("type", channel["type"][0])
+        for channel in stream["info"]["desc"][0]["channels"][0]["channel"]:
+            channel_info = channels_info.append_child("channel")
+            channel_info.append_child_value("label", channel["label"][0])
+            channel_info.append_child_value("unit", channel["unit"][0])
+            channel_info.append_child_value("type", channel["type"][0])
 
         #for each stream store realated data into a dict
         streams_data.append({"outlet" : StreamOutlet(info), 

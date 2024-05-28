@@ -1,1 +1,9 @@
 venv/
+# Ignoriere alle __pycache__-Verzeichnisse
+__pycache__/
+
+# Ignoriere alle .pyc-Dateien
+*.pyc
+
+launch.json
+plot_hrv.py
