@@ -1,5 +1,5 @@
 from dash import Dash, html, Input, Output, callback, dcc, State, no_update
-import plotly.express as px
+import plotly.graph_objects as go
 import pandas as pd
 import random
 from globals import *
@@ -29,11 +29,19 @@ def get_x_range():
 
     return range_x
 
+def get_color(current_plot):
+
+    if (current_plot == "Topoplot"):
+        return  "Blue"
+    else:
+        return  "Red"
+    
 @callback(
     Output('main-plot', 'figure'),
     Input('interval-graph', 'n_intervals'),
+    State('main-plot-selection', 'value')
 )
-def update_main_plot(n_intervals):
+def update_main_plot(n_intervals, current_plot):
     global buffer_frame
     global graph_frame 
     graph_frame["time"].extend(buffer_frame["time"])
@@ -44,7 +52,7 @@ def update_main_plot(n_intervals):
         graph_frame["value"] = graph_frame["value"][10000:]
     buffer_frame = {"time" : [], "value" : []}
 
-    return px.line(pd.DataFrame(graph_frame), x = "time", y = "value", range_x = get_x_range(), range_y=[0, 1])
+    return go.Figure(data=go.Scatter(x=graph_frame["time"], y=graph_frame["value"], mode='lines', line_color=get_color(current_plot), line_width=1), layout_yaxis_range=[0,1], layout_xaxis_range=get_x_range())
 
 
 @callback(
