@@ -3,7 +3,6 @@ import time
 import pyxdf
 import argparse
 import os
-from mne.datasets import misc
 
 
 def main():
@@ -16,13 +15,14 @@ def main():
         print("ERROR: path is not a file")
         exit()
 
+    #load xdf file
     streams, file_header = pyxdf.load_xdf(args.xdf_file_path, select_streams=[{'type': 'EEG'}])
     print("loaded xdf")
     continous_mode = args.continous
     print("Coninous mode: " + str(continous_mode))
-    #streams, file_header = pyxdf.load_xdf(misc.data_path()  / "xdf" / "sub-P001_ses-S004_task-Default_run-001_eeg_a2.xdf")
 
-    outlets_streams = []
+    
+    streams_data = []
     active_streams = 0
     for stream in streams:
         info = StreamInfo(stream["info"]["name"][0], stream["info"]["type"][0], int(stream["info"]["channel_count"][0]), float(stream["info"]["nominal_srate"][0]), stream["info"]["channel_format"][0])
@@ -34,29 +34,42 @@ def main():
             channel_info.append_child_value("unit", channel["unit"][0])
             channel_info.append_child_value("type", channel["type"][0])
 
-        outlets_streams.append([StreamOutlet(info), stream, time.time(), 0, True])
+        #for each stream store realated data into a dict
+        streams_data.append({"outlet" : StreamOutlet(info), 
+                             "stream" : stream, 
+                             "time_since_last_sent_sample" : time.time(), 
+                             "data_index" : 0, 
+                             "is_active" : True,
+                             "period" : 1/float(stream["info"]["nominal_srate"][0])}) 
         active_streams +=1
 
     print("Starting to stream data")
 
     while active_streams:
-        for outlet_stream in outlets_streams:
-            if not outlet_stream[4]:
+        for stream_index, current_stream in enumerate(streams_data):
+            if not current_stream["is_active"]:
                 continue
 
             curr_time = time.time()
-            if ((curr_time-outlet_stream[2]) >= 1/float(outlet_stream[1]["info"]["nominal_srate"][0])):
-                data = outlet_stream[1]["time_series"]
-                if (outlet_stream[3] >= data.shape[0]):
+            if ((curr_time-current_stream["time_since_last_sent_sample"]) >= current_stream["period"]):
+                data = current_stream["stream"]["time_series"]
+
+                data_count = data.shape[0]
+                if (current_stream["data_index"] >= data_count):
                     if (continous_mode):
-                        outlet_stream[3] = 0
+                        current_stream["data_index"] = 0 #just reset index in continuos mode
                     else:
                         active_streams -=1
-                        outlet_stream[4] = False
+                        current_stream["is_active"] = False
                         continue
-                outlet_stream[0].push_sample(data[outlet_stream[3]])
-                outlet_stream[3] += 1
-                outlet_stream[2] = time.time()
+                current_stream["outlet"].push_sample(data[current_stream["data_index"]])
+
+                #only log every 1000th sample to not overwhelm the console
+                if (current_stream['data_index'] % 1000): 
+                    print(f"Stream {stream_index} sent sample {current_stream['data_index']} / {data_count}")
+
+                current_stream["time_since_last_sent_sample"] = time.time()
+                current_stream["data_index"] += 1
     print("Stopping to stream data")
 
 if __name__ == "__main__":
