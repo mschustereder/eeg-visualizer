@@ -1,15 +1,14 @@
 import pylsl
 from pylsl import StreamInfo
 from pylsl import StreamInlet
-from typing import List
 import threading
 import queue
 from dataclasses import dataclass, field
-from typing import Dict, Tuple
+from typing import Dict, Tuple, List
 from datetime import datetime
 import time
 
-SAMPLE_COUNT_MAX_QUEUE = 100
+SAMPLE_COUNT_MAX_QUEUE = 20
 
 @dataclass
 class DataQueueStruct:
@@ -46,7 +45,7 @@ class LslHandler:
                         queue.queue_length += 1
                     if queue.queue_length > SAMPLE_COUNT_MAX_QUEUE:
                         while not queue.data_queue.empty(): #this mechanism is probably not really efficient and should be overthought
-                            queue.data_queue.get()
+                            queue.data_queue.get(block= False)
                         queue.queue_length = 0
                 time.sleep(0.0001)
 
@@ -69,6 +68,16 @@ class LslHandler:
             except: 
                 pass
         return data_sample #if the queue was empty it returns None
+    
+    def get_available_data_as_chunk(self, stream : StreamInfo):
+        chunk_to_return = []
+        queue_struct = self.active_streams[stream][1]
+        with queue_struct.data_queue_lock: 
+            while not queue_struct.data_queue.empty(): 
+                chunk_to_return.append(queue_struct.data_queue.get(block = False))
+                queue_struct.data_queue.task_done()
+            queue_struct.queue_length = 0
+        return chunk_to_return #returns empty list if queue is empty
     
     def get_stream_by_name(self, name):
         for stream in self.active_streams:

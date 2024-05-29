@@ -1,5 +1,6 @@
 from  lslHandler.lslHandler import LslHandler
 from pylsl import StreamInfo
+from typing import Dict, Tuple, List
 
 
 class EEGProcessor:
@@ -38,6 +39,27 @@ class EEGProcessor:
             return data_dict, timestamp
         return None
     
+    def get_eeg_data_as_chunk(self) -> List[Tuple[Dict,float]]:
+        list_of_data_dicts = []
+
+        data_list = self.lslhandler.get_available_data_as_chunk(self.stream)
+        if data_list: # an empty list evaluates to False
+            for data in data_list:
+                data_dict = {}
+                channel_data = data[0]
+                timestamp = data[1]
+                if self.first_timestamp == 0:
+                    self.first_timestamp = timestamp
+                timestamp = (timestamp- self.first_timestamp) 
+                    
+                assert len(channel_data) == len(self.eeg_layout)
+                for i,channel in enumerate(self.eeg_layout):
+                    data_dict[channel] = channel_data[i]
+
+                list_of_data_dicts.append((data_dict, timestamp))
+            return list_of_data_dicts
+        return None
+    
 
 
 #The main function is just for testing purposes
@@ -52,7 +74,10 @@ def main():
 
     eegprocessor = EEGProcessor(lslhandler, lslhandler.get_stream_by_name("BrainVision RDA"))
     while True:
-        if(data := eegprocessor.get_eeg_data_dict()) != None:
-            print(data[1])
+        if(data_list := eegprocessor.get_eeg_data_as_chunk()) != None:
+            print(all(d[0] == data_list[0][0] for d in data_list))
+            for data in data_list:
+                print(f"Recieved data: {data[0]} with timestamp {data[1]}")
+
 
         
