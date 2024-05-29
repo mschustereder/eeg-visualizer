@@ -68,7 +68,7 @@ def add_data(n_intervals):
     global buffer_frame
     buffer_frame["time"].append(start_interval)
     start_interval += 1
-    buffer_frame["value"].append(random.random())
+    buffer_frame["value"].append(lsl_handler.get_sample(stream_to_use))
 
 
 @callback(

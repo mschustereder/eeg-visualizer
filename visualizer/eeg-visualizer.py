@@ -1,6 +1,8 @@
 from dash import Dash, html, Input, Output, callback, dcc
 import pandas as pd
 import dash_bootstrap_components as dbc
+from globals import *
+
 
 external_stylesheets = [dbc.themes.LUX]
 app = Dash(__name__, external_stylesheets=external_stylesheets)
@@ -109,4 +111,8 @@ def show_brainwave_selection(value):
 from graph_callbacks import *
 
 if __name__ == '__main__':
+    streams = lsl_handler.get_all_lsl_streams()
+    stream_to_use = streams[0]
+    lsl_handler.connect_to_specific_lsl_stream(stream_to_use)
+    lsl_handler.start_data_recording_thread(stream_to_use)
     app.run(debug=True)
