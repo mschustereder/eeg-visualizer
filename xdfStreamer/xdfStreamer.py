@@ -65,7 +65,7 @@ def main():
                 current_stream["outlet"].push_sample(data[current_stream["data_index"]])
 
                 #only log every 1000th sample to not overwhelm the console
-                if (current_stream['data_index'] % 1000): 
+                if (not current_stream['data_index'] % 1000): 
                     print(f"Stream {stream_index} sent sample {current_stream['data_index']} / {data_count}")
 
                 current_stream["time_since_last_sent_sample"] = time.time()
