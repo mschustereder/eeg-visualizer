@@ -50,12 +50,14 @@ def spectrumPlot():
     State('main-plot-selection', 'value')
 )
 def update_main_plot(n_intervals, current_plot):
+
+    if gl.eeg_processor == None:
+        return no_update
+
     data = gl.eeg_processor.get_eeg_data_as_chunk()
 
     if data == None:
         return no_update
-
-    gl.buffer_frame = {"time" : [], "value" : []}
     
     for sample in data:
         gl.graph_frame["time"].append(sample[1])
