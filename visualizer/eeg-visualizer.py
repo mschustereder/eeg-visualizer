@@ -1,7 +1,7 @@
 from dash import Dash, html, Input, Output, callback, dcc
 import pandas as pd
 import dash_bootstrap_components as dbc
-# from lslHandler.lslHandler import *
+from lslHandler.lslHandler import LslHandler
 
 external_stylesheets = [dbc.themes.LUX]
 app = Dash(__name__, external_stylesheets=external_stylesheets)
@@ -83,13 +83,7 @@ auxiliary_plot_card = dbc.Card(
     className='auxiliary-plot'
 )
 
-streams_list = dbc.ListGroup(
-    [
-        dbc.ListGroupItem("Stream 1"),
-        dbc.ListGroupItem("Stream 2"),
-        dbc.ListGroupItem("Stream 3"),
-    ]
-)
+streams_list = dbc.ListGroup(id="lsl_streams_list")
 
 lsl_stream_selection_modal = html.Div(
     [
@@ -126,10 +120,19 @@ app.layout = dbc.Container([
     Input("open_modal_button", "n_clicks")
 )
 def toggle_modal(open_modal_button_clicked):
-    # lslhandler = LslHandler()
-    # all_streams = lslhandler.get_all_lsl_streams()
-    # print(lslhandler.get_all_lsl_streams_as_infostring())
     return open_modal_button_clicked
+
+@app.callback(
+    Output("lsl_streams_list", "children"),
+    Input("open_modal_button", "n_clicks")
+)
+def toggle_modal(open_modal_button_clicked):
+    lslhandler = LslHandler()
+    lsl_streams_as_infostrings = lslhandler.get_all_lsl_streams_as_infostring()
+    def create_list_item(infostr, idx): return dbc.ListGroupItem(dbc.Button(infostr, color="primary", id=f"button_id_{idx}", n_clicks=0, className="lsl_stream_button"), className="lsl_stream_item")
+
+    lsl_streams_list_as_group_items = [create_list_item(infostring, index) for index, infostring in enumerate(lsl_streams_as_infostrings)]
+    return lsl_streams_list_as_group_items
 
 @callback(
     Output('brainwave-selection', 'children'),
