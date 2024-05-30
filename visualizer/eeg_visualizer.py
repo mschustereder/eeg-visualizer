@@ -22,7 +22,7 @@ main_plot_card = dbc.Card(
                 main_plot,
                 dcc.Interval(
                     id='interval-graph',
-                    interval=150, # in milliseconds
+                    interval=100, # in milliseconds
                     n_intervals=0
                 ),
             ]

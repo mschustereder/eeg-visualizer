@@ -77,8 +77,14 @@ def spectrumPlot():
         while(frequency[cut_index] < 1):
             cut_index += 1
 
-        gl.graph_frame.frequencies = frequency[cut_index:]
-        gl.graph_frame.fft_vizualizer_values.append(fft_magnitude_normalized[cut_index:])
+        #we can also cut anything above FREQUENCY_CUT_OFF
+            
+        cut_index_top = 0
+        while(frequency[cut_index_top] < gl.FREQUENCY_CUT_OFF):
+            cut_index_top += 1
+
+        gl.graph_frame.frequencies = frequency[cut_index:cut_index_top]
+        gl.graph_frame.fft_vizualizer_values.append(fft_magnitude_normalized[cut_index:cut_index_top])
 
         #we are using relative times from the first sample to the last sample in the fft_visualizer_values
         if len(gl.graph_frame.fft_timestamps)==0:
@@ -91,7 +97,6 @@ def spectrumPlot():
         if len(gl.graph_frame.fft_vizualizer_values) > gl.SAMPLES_SHOWN_IN_SPECTROGRAM:
             gl.graph_frame.fft_vizualizer_values = gl.graph_frame.fft_vizualizer_values[-gl.SAMPLES_SHOWN_IN_SPECTROGRAM:]
             gl.graph_frame.fft_timestamps = gl.graph_frame.fft_timestamps[-gl.SAMPLES_SHOWN_IN_SPECTROGRAM:]
-
         fig = go.Figure(data=go.Surface(z=gl.graph_frame.fft_vizualizer_values, x = gl.graph_frame.frequencies, y = gl.graph_frame.fft_timestamps))
         fig.update_layout(
             scene=dict(

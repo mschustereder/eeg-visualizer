@@ -4,9 +4,10 @@ from visualizer.EEGGraphFrame import EEGGraphFrame
 #CONSTANTS
 
 # with how manny samples should the fft be calculated (has to be power of 2)
-FFT_SAMPLES = 1024
-SAMPLES_SHOWN_IN_SPECTROGRAM = 50
-FREQUENCY_MIN_MAX_BOUND = [50, 1]
+FFT_SAMPLES = 512
+SAMPLES_SHOWN_IN_SPECTROGRAM = 40
+FREQUENCY_CUT_OFF = 40
+FREQUENCY_MIN_MAX_BOUND = [FREQUENCY_CUT_OFF, 1]
 
 # NOTE: usually it is forbidden to use global variables with Dash, 
 # but due to the simple fact that dcc.storage is way too slow we will use it anyways
