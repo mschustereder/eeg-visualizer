@@ -1,7 +1,6 @@
 from dash import Dash, html, Input, Output, callback, dcc
 import pandas as pd
 import dash_bootstrap_components as dbc
-from globals import *
 
 
 external_stylesheets = [dbc.themes.LUX]
@@ -13,24 +12,19 @@ header_bar = dbc.NavbarSimple(
     dark=True,
 )
 
+main_plot = dcc.Graph(id='main-plot', config={'staticPlot': True}) #callback of dropdown will initialize graph
+
 main_plot_card = dbc.Card(
     [
         dbc.CardBody(
             [
                 html.H4(className="card-title", id='main-plot-title'),
-                dcc.Graph(id='main-plot',
-                          config={'staticPlot': True}), #callback of dropdown will initialize graph
-                dcc.Interval(
-                    id='interval-data-gen',
-                    interval=1, # in milliseconds
-                    n_intervals=0
-                ),
+                main_plot,
                 dcc.Interval(
                     id='interval-graph',
                     interval=100, # in milliseconds
                     n_intervals=0
                 ),
-                dcc.Store(id="store-data", data = {"time" : [], "value" : []}),
             ]
         ),
     ],
@@ -42,7 +36,7 @@ selection_for_main_plot = dbc.Card([
         html.H5("Main Plot Parameters", className="card-title"),
         html.Div([
             'Choose Main Plot',
-            dcc.Dropdown(['Topoplot', 'Spectrogram'], 'Topoplot', id='main-plot-selection', clearable=False)
+            dcc.Dropdown(['TimeSignal', 'FrequencySignal', 'Topoplot', 'Spectrogram'], 'TimeSignal', id='main-plot-selection', clearable=False)
         ]),
         html.Div(id='brainwave-selection'),
     ])
@@ -83,6 +77,30 @@ auxiliary_plot_card = dbc.Card(
     className='auxiliary-plot'
 )
 
+streams_list = dbc.ListGroup(
+    [
+        dbc.ListGroupItem("Stream 1"),
+        dbc.ListGroupItem("Stream 2"),
+        dbc.ListGroupItem("Stream 3"),
+    ]
+)
+
+lsl_stream_selection_modal = html.Div(
+    [
+        dbc.Button("Open modal", id="open_modal_button", n_clicks=0),
+        dbc.Modal(
+            [
+                dbc.ModalHeader(dbc.ModalTitle("Select an LSL Stream")),
+                dbc.ModalBody(
+                    streams_list
+                )
+            ],
+            id="lsl_stream_selection_modal",
+            is_open=False,
+        ),
+    ]
+)
+
 app.layout = dbc.Container([
     dbc.Row([header_bar]),
     html.Div(children=[
@@ -92,10 +110,20 @@ app.layout = dbc.Container([
         ]),
         dbc.Row([
             dbc.Col([auxiliary_plot_card])            
-        ])
+        ]),
+        lsl_stream_selection_modal
     ], className='outer-container')
 ], fluid=True)
 
+@app.callback(
+    Output("lsl_stream_selection_modal", "is_open"),
+    Input("open_modal_button", "n_clicks")
+)
+def toggle_modal(open_modal_button_clicked):
+    # lslhandler = LslHandler()
+    # all_streams = lslhandler.get_all_lsl_streams()
+    # print(lslhandler.get_all_lsl_streams_as_infostring())
+    return open_modal_button_clicked
 
 @callback(
     Output('brainwave-selection', 'children'),
@@ -108,11 +136,4 @@ def show_brainwave_selection(value):
                 ]
     return brainwave_selection if value == 'Topoplot' else []
 
-from graph_callbacks import *
-
-if __name__ == '__main__':
-    streams = lsl_handler.get_all_lsl_streams()
-    stream_to_use = streams[0]
-    lsl_handler.connect_to_specific_lsl_stream(stream_to_use)
-    lsl_handler.start_data_recording_thread(stream_to_use)
-    app.run(debug=True)
+from visualizer.graph_callbacks import *
