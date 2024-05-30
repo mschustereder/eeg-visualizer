@@ -12,7 +12,7 @@ header_bar = dbc.NavbarSimple(
     dark=True,
 )
 
-main_plot = dcc.Graph(id='main-plot', config={'staticPlot': True}) #callback of dropdown will initialize graph
+main_plot = dcc.Graph(id='main-plot') #callback of dropdown will initialize graph
 
 main_plot_card = dbc.Card(
     [
@@ -22,7 +22,7 @@ main_plot_card = dbc.Card(
                 main_plot,
                 dcc.Interval(
                     id='interval-graph',
-                    interval=100, # in milliseconds
+                    interval=150, # in milliseconds
                     n_intervals=0
                 ),
             ]

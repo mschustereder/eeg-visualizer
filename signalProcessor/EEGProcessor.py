@@ -23,7 +23,6 @@ class EEGProcessor:
 
     def get_eeg_data_dict(self):
         data_dict = {}
-
         data = self.lslhandler.get_data_sample(self.stream)
         if data != None:
             channel_data = data[0]

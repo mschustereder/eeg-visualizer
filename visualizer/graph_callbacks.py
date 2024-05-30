@@ -3,6 +3,7 @@ import plotly.graph_objects as go
 import pandas as pd
 import numpy as np
 import visualizer.globals as gl
+import time
 
 def get_next_lowest_power_of_two(num):
     return 2 ** (num - 1).bit_length()
@@ -22,27 +23,92 @@ def calculate_fft(signal, sampling_rate):
 def get_x_range():
     range_x=[0, 45]
     
-    if len(gl.graph_frame["time"]) != 0:
-        range_x = [gl.graph_frame["time"][0], gl.graph_frame["time"][0]+45]
+    if len(gl.graph_frame.timestamps) != 0:
+        range_x = [gl.graph_frame.timestamps[0], gl.graph_frame.timestamps[0]+45]
 
     return range_x
 
 def cut_buffer():
-    time_diff = gl.graph_frame["time"][-1]  - gl.graph_frame["time"][0]
+    time_diff = gl.graph_frame.timestamps[-1]  - gl.graph_frame.timestamps[0]
     if time_diff > 45:
         print("cut")
         cut_index = 0
-        while((gl.graph_frame["time"][cut_index]  - gl.graph_frame["time"][0]) < 45 and cut_index < len(gl.graph_frame["time"])):
+        while((gl.graph_frame.timestamps[cut_index]  -gl.graph_frame.timestamps[0]) < 45 and cut_index < len(gl.graph_frame.timestamps)):
             cut_index +=1 
         print(cut_index)
-        gl.graph_frame["time"] = gl.graph_frame["time"][cut_index:]
-        gl.graph_frame["value"] = gl.graph_frame["value"][cut_index:]
+        gl.graph_frame.timestamps = gl.graph_frame.timestamps[cut_index:]
+        gl.graph_frame.eeg_values["Fz"] = gl.graph_frame.eeg_values["Fz"][cut_index:]
 
 def topoPlot():
-    return go.Figure(data=go.Scatter(x=gl.graph_frame["time"], y=gl.graph_frame["value"], mode='lines', line_color="Blue", line_width=0.5) , layout_xaxis_range=get_x_range(), layout_yaxis_range=[-5400, -4900])
+    data = gl.eeg_processor.get_eeg_data_as_chunk()
+
+    if data == None:
+        return no_update
+    
+    for sample in data:
+        gl.graph_frame.timestamps.append(sample[1])
+        gl.graph_frame.eeg_values["Fz"].append(sample[0]["Fz"])
+
+    cut_buffer()
+
+    return go.Figure(data=go.Scatter(x=gl.graph_frame.timestamps, y=gl.graph_frame.eeg_values["Fz"], mode='lines', line_color="Blue", line_width=0.5) , layout_xaxis_range=get_x_range())#, layout_yaxis_range=[-5400, -4900])
 
 def spectrumPlot():
-    return go.Figure(data=go.Scatter(x=gl.graph_frame["time"], y=gl.graph_frame["value"], mode='lines', line_color="Red", line_width=0.5) ,layout_xaxis_range=get_x_range(), layout_yaxis_range=[-5400, -4900])
+
+    data = gl.eeg_processor.get_eeg_data_as_chunk()
+
+    if data == None:
+        return no_update
+    
+    for sample in data:
+        gl.graph_frame.fft_values_buffer.append(sample[0]["Fz"])
+
+    #only update graph if accumulated data is FFT_SAMPLES samples long
+    if len(gl.graph_frame.fft_values_buffer) >= gl.FFT_SAMPLES:
+
+        #we want to get a spectrum every 100ms, so we will calulate overlapping fft windows, and thus use the fft_values_buffer as a FIFO buffer
+        gl.graph_frame.fft_values_buffer = gl.graph_frame.fft_values_buffer[-gl.FFT_SAMPLES:] 
+        sampling_rate = gl.eeg_processor.stream.nominal_srate()
+        sample_time = data[-1][1] - data[0][1] #this is the time that has passed in the sample world
+        frequency, fft_magnitude_normalized = calculate_fft(gl.graph_frame.fft_values_buffer, sampling_rate)
+
+        #we dont want the offset a 0 Hz included, so we will cut off every frequency below 1 Hz
+        cut_index = 0
+        while(frequency[cut_index] < 1):
+            cut_index += 1
+
+        gl.graph_frame.frequencies = frequency[cut_index:]
+        gl.graph_frame.fft_vizualizer_values.append(fft_magnitude_normalized[cut_index:])
+
+        #we are using relative times from the first sample to the last sample in the fft_visualizer_values
+        if len(gl.graph_frame.fft_timestamps)==0:
+            gl.graph_frame.fft_timestamps.append(sample_time)
+        else:
+            gl.graph_frame.fft_timestamps.append(gl.graph_frame.fft_timestamps[-1] + sample_time)
+
+        
+        #only show the last SAMPLES_SHOWN_IN_SPECTROGRAM samples
+        if len(gl.graph_frame.fft_vizualizer_values) > gl.SAMPLES_SHOWN_IN_SPECTROGRAM:
+            gl.graph_frame.fft_vizualizer_values = gl.graph_frame.fft_vizualizer_values[-gl.SAMPLES_SHOWN_IN_SPECTROGRAM:]
+            gl.graph_frame.fft_timestamps = gl.graph_frame.fft_timestamps[-gl.SAMPLES_SHOWN_IN_SPECTROGRAM:]
+
+        fig = go.Figure(data=go.Surface(z=gl.graph_frame.fft_vizualizer_values, x = gl.graph_frame.frequencies, y = gl.graph_frame.fft_timestamps))
+        fig.update_layout(
+            scene=dict(
+                xaxis = dict(range=gl.FREQUENCY_MIN_MAX_BOUND, showgrid=True, title="Frequency", showbackground=True, backgroundcolor="rgba(0, 0, 0,0)"),
+                yaxis = dict(title="", showgrid=False, showbackground=True, backgroundcolor="rgba(0, 0, 0,0)",showticklabels=False),
+                zaxis = dict(showgrid=True, title="", showticklabels=False),
+                aspectmode = "manual",
+                aspectratio = dict(x=7, y=4, z=1)),
+
+            scene_camera = dict(
+                eye=dict(x=-0.2, y=4.5, z=0.5)),
+            
+            )
+        return fig
+    print(len(gl.graph_frame.fft_values_buffer))
+    return no_update
+
     
 @callback(
     Output('main-plot', 'figure'),
@@ -54,42 +120,10 @@ def update_main_plot(n_intervals, current_plot):
     if gl.eeg_processor == None:
         return no_update
 
-    data = gl.eeg_processor.get_eeg_data_as_chunk()
-
-    if data == None:
-        return no_update
-    
-    for sample in data:
-        gl.graph_frame["time"].append(sample[1])
-        gl.graph_frame["value"].append(sample[0]["Fz"])
-
-    cut_buffer()
-
     if (current_plot == "Topoplot"):
         return topoPlot()
     else:
         return spectrumPlot()
-    
-    # if current_plot == 'FrequencySignal':
-    #     time = graph_frame["time"]
-    #     values = graph_frame["value"]
-    #     N = 1024
-    #     if len(time) > N:
-    #         time = time[N:]
-    #         values = values[N:]
-
-    #     sampling_rate = 500
-
-    #     frequency, fft_magnitude_normalized = calculate_fft(values, sampling_rate)
-
-    #     return go.Figure(data=go.Scatter(x=frequency, y=fft_magnitude_normalized, mode='lines', line_color=get_color(current_plot), line_width=1), layout=dict(
-    #         xaxis=dict(range=[0, 5], title='Frequency in Hz')
-    #     ))
-    # else:
-    #     return go.Figure(data=go.Scatter(x=graph_frame["time"], y=graph_frame["value"], mode='lines', line_color=get_color(current_plot), line_width=1), layout=dict(
-    #         yaxis=dict(range=[-1, 1]),
-    #         xaxis=dict(range=get_x_range(), title='Time in ms')
-    #     ))
 
 
 @callback(
