@@ -22,7 +22,7 @@ main_plot_card = dbc.Card(
                 main_plot,
                 dcc.Interval(
                     id='interval-graph',
-                    interval=100, # in milliseconds
+                    interval=30, # in milliseconds
                     n_intervals=0
                 ),
             ]
@@ -62,15 +62,19 @@ selection_area = dbc.Card(
     className='selection-area'
 )
 
+auxiliary_plot = dcc.Graph(id='auxiliary-plot')
+
 auxiliary_plot_card = dbc.Card(
     [
         dbc.CardBody(
             [
                 html.H4("Auxiliary Plot Area", className="card-title", id='auxiliary-plot-title'),
-                html.P(
-                    "Here there will be some form of line plot. ECG for example, or RR Plot.",
-                    className="card-text",
-                )
+                auxiliary_plot,
+                dcc.Interval(
+                    id='interval-auxiliary-graph',
+                    interval=100, # in milliseconds
+                    n_intervals=0
+                ),
             ]
         ),
     ],
@@ -100,7 +104,7 @@ app.layout = dbc.Container([
     html.Div(children=[
         dbc.Row([
             dbc.Col([main_plot_card], width=9),
-            dbc.Col([selection_area])
+            dbc.Col([selection_area]),
         ]),
         dbc.Row([
             dbc.Col([auxiliary_plot_card])            

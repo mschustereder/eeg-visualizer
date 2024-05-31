@@ -1,11 +1,12 @@
 from  lslHandler.lslHandler import LslHandler
 from visualizer.EEGGraphFrame import EEGGraphFrame
+from visualizer.HRGraphFrame import HRGraphFrame
 
 #CONSTANTS
 
 # with how manny samples should the fft be calculated (has to be power of 2)
 FFT_SAMPLES = 512
-SAMPLES_SHOWN_IN_SPECTROGRAM = 40
+SAMPLES_SHOWN_IN_SPECTROGRAM = 50
 FREQUENCY_CUT_OFF = 40
 FREQUENCY_MIN_MAX_BOUND = [FREQUENCY_CUT_OFF, 1]
 
@@ -18,8 +19,10 @@ lsl_handler = LslHandler()
 
 #global eeg processor object
 eeg_processor = None
+hr_processor = None
 
 #holds the data that the graph is displaying
-graph_frame = EEGGraphFrame()
+main_graph_frame = EEGGraphFrame()
+aux_graph_frame = HRGraphFrame()
 
  

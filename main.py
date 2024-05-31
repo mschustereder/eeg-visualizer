@@ -8,5 +8,5 @@ if __name__ == '__main__':
     gl.lsl_handler.connect_to_specific_lsl_stream(streams[0])
     gl.lsl_handler.start_data_recording_thread(streams[0])
     gl.eeg_processor = EEGProcessor(gl.lsl_handler, streams[0])
-    gl.graph_frame.eeg_values["Fz"] = []
+    gl.main_graph_frame.eeg_values["Fz"] = []
     app.run(debug=True)
