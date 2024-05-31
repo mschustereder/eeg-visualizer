@@ -114,26 +114,25 @@ def spectrumPlot():
     print(len(gl.graph_frame.fft_values_buffer))
     return no_update
 
-    
 @callback(
     Output('main-plot', 'figure'),
     Input('interval-graph', 'n_intervals'),
     State('main-plot-selection', 'value')
 )
 def update_main_plot(n_intervals, current_plot):
-
     if gl.eeg_processor == None:
         return no_update
 
-    if (current_plot == "Topoplot"):
+    if current_plot == 'Topoplot':
         return topoPlot()
-    else:
+    elif current_plot == 'Spectrogram':
         return spectrumPlot()
+    else:
+        return no_update
 
-
-@callback(
-    Output('auxiliary-plot-title', 'children'),
-    Input('auxiliary-plot-selection', 'value')
-)
-def update_auxiliary_plot(value):
-    return value
+# @callback(
+#     Output('auxiliary-plot-title', 'children'),
+#     Input('auxiliary-plot-selection', 'value')
+# )
+# def update_auxiliary_plot(value):
+#     return value

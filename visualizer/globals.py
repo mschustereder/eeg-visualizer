@@ -22,4 +22,6 @@ eeg_processor = None
 #holds the data that the graph is displaying
 graph_frame = EEGGraphFrame()
 
+# GUI Settings
+MAX_NUM_OF_PLOTS = 5
  
