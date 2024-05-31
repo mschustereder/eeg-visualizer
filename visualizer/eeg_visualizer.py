@@ -57,7 +57,7 @@ configuration_list = dbc.ListGroup(id="configuration-list", children=[
 
 buttons_list_item = [
     dbc.Button("Add another sub plot", id="add-sub-plot-button", n_clicks=0, color="primary"),
-    dbc.Button("Remove last sub plot", id="remove-sub-plot-button", n_clicks=0, color="danger")
+    dbc.Button("Remove last sub plot", id="remove-sub-plot-button", n_clicks=0, color="danger", disabled=True)
 ]
 
 buttons_for_plot_configuration = dbc.ListGroup(dbc.ListGroupItem(children=buttons_list_item, style={
@@ -186,8 +186,8 @@ def update_auxiliary_plot(value):
     Output('button_clicks_store', 'data'),
     Output('add_sub_plot_store', 'data'),
     Output('remove_sub_plot_store', 'data'),
-    # Output('add-sub-plot-button', 'disabled'),
-    # Output('remove-sub-plot-button', 'disabled'),
+    Output('add-sub-plot-button', 'disabled'),
+    Output('remove-sub-plot-button', 'disabled'),
     [Input("add-sub-plot-button", "n_clicks"), Input("remove-sub-plot-button", "n_clicks")],
     State('button_clicks_store', 'data'),
     State('configuration-list', 'children'),
@@ -207,16 +207,16 @@ def update_plot_configuration(num_clicks_add_button, num_clicks_remove_button, s
     if add_button_clicked:
         sub_plot_index = len(children_configuration_list) - 1
         new_children_for_configuration_list = children_configuration_list + [dbc.ListGroupItem(children=get_configuration_for_sub_plot(sub_plot_index))]
-        # should_disable_add_button = True if len(new_children_for_configuration_list) >= gl.MAX_NUM_OF_PLOTS else False
+        should_disable_add_button = True if len(new_children_for_configuration_list) >= gl.MAX_NUM_OF_PLOTS else False
         update_value_for_add_sub_plot_store = {'just_a_counter': add_sub_plot_store_data['just_a_counter'] + 1, 'sub_plot_index': sub_plot_index}
-        return new_children_for_configuration_list, update_value_for_store, update_value_for_add_sub_plot_store, no_update
+        return new_children_for_configuration_list, update_value_for_store, update_value_for_add_sub_plot_store, no_update, should_disable_add_button, False
     elif remove_button_clicked:
         new_children_for_configuration_list = children_configuration_list[:-1]
-        # should_disable_remove_button = True if len(new_children_for_configuration_list) <= 1 else False
+        should_disable_remove_button = True if len(new_children_for_configuration_list) <= 1 else False
         update_value_for_remove_sub_plot_store = {'just_a_counter': remove_sub_plot_store_data['just_a_counter'] + 1}
-        return new_children_for_configuration_list, update_value_for_store, no_update, update_value_for_remove_sub_plot_store
+        return new_children_for_configuration_list, update_value_for_store, no_update, update_value_for_remove_sub_plot_store, False, should_disable_remove_button
     else:
-        return no_update, update_value_for_store, no_update, no_update
+        return no_update, update_value_for_store, no_update, no_update, no_update, no_update
   
 @app.callback(
     Output('draggable', 'children'),
