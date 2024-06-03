@@ -1,7 +1,7 @@
 #Use this file to avoid messy import errors and workarounds
 
 import signalProcessor.HRProcessor as hr
-import signalProcessor.EEGProcessor as eeg
+from signalProcessor.EEGProcessor import *
 import mne
 import numpy as np
 from mne.preprocessing import ICA
@@ -57,10 +57,29 @@ info = mne.create_info(ch_names=biosemi_montage.ch_names, sfreq=500., ch_types='
 raw = mne.io.RawArray(mean_data.T, info)
 raw.set_montage(biosemi_montage)
 
+
 fig, ax = plt.subplots()
 plt.ion()
-im, cn = mne.viz.plot_topomap(mean_ch, raw.info,axes=ax ,show=True)
+im, cn = mne.viz.plot_topomap(mean_ch, raw.info,axes=ax ,show=False)
+plt.show(block=False)
+# im, cn = mne.viz.plot_topomap(alpha_mean, raw2.info, show=True)
+
 plt.colorbar(im, ax=ax)
+
+# sent_samples = 0
+# k = -1
+# while True:
+#     new_data = []
+    
+#     if(new_data := eegprocessor.get_eeg_data_as_chunk()) != None:
+#         # new_data = [list(arr[0].values())[:-10] for arr in new_data]
+#         sent_samples += len(new_data)
+#         if(sent_samples > k*1000): 
+#             print(sent_samples)
+#             k+=1
+#     else: continue
+
+
 
 while True:
     new_data = []
@@ -75,6 +94,9 @@ while True:
 
     mean_data = (data - np.mean(data, axis=0)) / np.std(data, axis=0)
     mean_ch = np.mean(mean_data, axis=0)  # mean samples with channel dimension left
+
+    # alpha_data = mne.filter.filter_data(mean_data, S_FREQU, l_freq=ALPHA_BAND[0], h_freq=ALPHA_BAND[1])
+    # alpha_mean = np.mean(alpha_data, axis=0)
 
     ax.clear()
     im, cn = mne.viz.plot_topomap(mean_ch, raw.info,axes=ax ,show=True)

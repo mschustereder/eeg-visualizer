@@ -5,6 +5,12 @@ import numpy as np
 import mne
 import matplotlib.pyplot as plt
 
+DELTA_BAND = (0.1,4)
+THETA_BAND = (4,8)
+ALPHA_BAND = (8,13)
+BETA_BAND = (13,30)
+GAMMA_BAND = (30,100)
+#Source: https://de.wikipedia.org/wiki/Elektroenzephalografie#EEG-Frequenzb%C3%A4nder_und_Graphoelemente
 
 class EEGProcessor:
     def __init__(self, lslhandler: LslHandler, stream : StreamInfo): #Must be called after connecting to EEG stream to get the layout

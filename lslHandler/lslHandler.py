@@ -8,7 +8,7 @@ from typing import Dict, Tuple, List
 from datetime import datetime
 import time
 
-SAMPLE_COUNT_MAX_QUEUE = 20
+SAMPLE_COUNT_MAX_QUEUE = 1000
 
 @dataclass
 class DataQueueStruct:
@@ -36,16 +36,23 @@ class LslHandler:
 
     def data_recording_thread(self, stream : StreamInfo):
         queue = self.active_streams[stream][1]
+
         while True: 
                 with queue.data_queue_lock:
-                    data = self.active_streams[stream][0].pull_sample(timeout = 0.0)
-                    if data != (None,None):
-                        queue.data_queue.put(data)
+                    data, timestamps = self.active_streams[stream][0].pull_chunk(timeout=0.0, max_samples = 10000)
+                    data_with_timestamps = []
+                    data_with_timestamps.extend(zip(data, timestamps))
+
+                    if data:
+                        for element in data_with_timestamps:
+                            queue.data_queue.put(element)
                         # print(f"added {data} to queue of stream {self.get_stream_name(stream)}")
                         queue.queue_length += 1
                     if queue.queue_length > SAMPLE_COUNT_MAX_QUEUE:
+                        print("Warning: Throwing away data samples")
                         while not queue.data_queue.empty(): #this mechanism is probably not really efficient and should be overthought
                             queue.data_queue.get(block= False)
+                            queue.data_queue.task_done()
                         queue.queue_length = 0
                 time.sleep(0.0001)
 
