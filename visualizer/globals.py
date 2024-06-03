@@ -9,6 +9,8 @@ FFT_SAMPLES = 512
 SAMPLES_SHOWN_IN_SPECTROGRAM = 50
 FREQUENCY_CUT_OFF = 40
 FREQUENCY_MIN_MAX_BOUND = [FREQUENCY_CUT_OFF, 1]
+SPECTRUM_GRAPH_GRADIENT_BOTTOM_COLOR = [255, 183, 0]
+SPECTRUM_GRAPH_GRADIENT_TOP_COLOR = [0, 0, 0]
 
 # NOTE: usually it is forbidden to use global variables with Dash, 
 # but due to the simple fact that dcc.storage is way too slow we will use it anyways
