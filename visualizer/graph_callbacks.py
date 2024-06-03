@@ -6,6 +6,7 @@ import numpy as np
 import visualizer.globals as gl
 import time
 import random
+from statistics import mean 
 
 def get_next_lowest_power_of_two(num):
     return 2 ** (num - 1).bit_length()
@@ -61,7 +62,7 @@ def spectrumPlot():
         return no_update
     
     for sample in data:
-        gl.main_graph_frame.fft_values_buffer.append(sample[0]["Fz"])
+        gl.main_graph_frame.fft_values_buffer.append(mean(list(sample[0].values())))
 
     #only update graph if accumulated data is FFT_SAMPLES samples long
     if len(gl.main_graph_frame.fft_values_buffer) >= gl.FFT_SAMPLES:
