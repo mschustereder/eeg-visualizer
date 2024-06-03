@@ -12,7 +12,7 @@ header_bar = dbc.NavbarSimple(
     dark=True,
 )
 
-main_plot = dcc.Graph(id='main-plot') #callback of dropdown will initialize graph
+main_plot = dcc.Graph(id='main-plot', config={"displayModeBar": False}) #callback of dropdown will initialize graph
 
 main_plot_card = dbc.Card(
     [
@@ -62,7 +62,7 @@ selection_area = dbc.Card(
     className='selection-area'
 )
 
-auxiliary_plot = dcc.Graph(id='auxiliary-plot')
+auxiliary_plot = dcc.Graph(id='auxiliary-plot', config={"staticPlot":True})
 
 auxiliary_plot_card = dbc.Card(
     [
