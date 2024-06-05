@@ -12,8 +12,9 @@ class Visualizer3D(gl.GLViewWidget):
     grid_size = 200
     grid_space = 5
 
-    #the values for x and z than can be seen from the camera
+    #the values for x, y and z than can be seen from the camera
     x_range = 48
+    y_range = 40
     z_range = 0
     
     def __init__(self):
@@ -26,11 +27,29 @@ class Visualizer3D(gl.GLViewWidget):
         self.addItem(self.grid_item)
         self.plot_item = gl.GLSurfacePlotItem(np.zeros(10), np.zeros(10), np.zeros((10, 10)))
         self.addItem(self.plot_item)
-        frequency_range = g.FREQUENCY_MIN_MAX_BOUND[1] - g.FREQUENCY_MIN_MAX_BOUND[0]
-        self.plot_item.translate(0, frequency_range/2-1, 0)
         self.setCameraPosition(elevation=5, azimuth=-1, distance=80)
-        self.accumulated_scale_factor = 1
+        self.scale_factor_x = 1
+        self.scale_factor_y = 1
+        self.scale_factor_z = 1
 
+        # we want that the spectrum is always good visible, x and y can be scaled at the beginning, since the paramters don´t change during execution
+        frequency_range = g.FREQUENCY_MAX - g.FREQUENCY_MIN
+        scale_y = self.y_range/frequency_range
+        if scale_y != 1:
+            self.scale_factor_y = self.scale_factor_y*scale_y
+            self.plot_item.scale(1, scale_y, 1)
+
+        #theoretically we always show g.EEG_GRAPH_INTERVAL_MS*0.001* g.SAMPLES_SHOWN_IN_SPECTROGRAM seconds so we will use this to scale the graph
+        shown_x = g.EEG_GRAPH_INTERVAL_MS*0.001* g.SAMPLES_SHOWN_IN_SPECTROGRAM
+        scale_x = self.x_range/shown_x
+        if scale_x != 1:
+            self.scale_factor_x = self.scale_factor_x*scale_x
+            self.plot_item.scale(scale_x, 1, 1)
+        
+        self.plot_item.translate(0, (-frequency_range/2 - g.FREQUENCY_MIN)*self.scale_factor_y, 0)
+
+    #disable all interaction mechanisms by overriding the corresponding functions
+        
     def wheelEvent(self, ev):
         pass
 
@@ -87,22 +106,15 @@ class Visualizer3D(gl.GLViewWidget):
             sample_time = data[-1][1] - data[0][1] #this is the time that has passed in the sample world
             frequency, fft_magnitude_normalized = fft.calculate_fft(g.main_graph_frame.fft_values_buffer, sampling_rate)
 
-            # we want that the spectrum is always good visible, theoretically we always show g.EEG_GRAPH_INTERVAL_MS*0.001* g.SAMPLES_SHOWN_IN_SPECTROGRAM seconds so we will use this to scale the graph
-            shown = (g.EEG_GRAPH_INTERVAL_MS*0.001* g.SAMPLES_SHOWN_IN_SPECTROGRAM)*self.accumulated_scale_factor
-            scale = self.x_range/shown
-            if scale != 1:
-                self.accumulated_scale_factor = self.accumulated_scale_factor*scale
-                self.plot_item.scale(scale, 1, 1) # scale is relative i.e if it was scaled before it will scale the already scaled values
-
             #we dont want the offset a 0 Hz included, so we will cut off every frequency below 1 Hz
             cut_index = 0
-            while(frequency[cut_index] < 1):
+            while(frequency[cut_index] < g.FREQUENCY_MIN):
                 cut_index += 1
 
             #we can also cut anything above FREQUENCY_CUT_OFF
                 
             cut_index_top = 0
-            while(frequency[cut_index_top] < g.FREQUENCY_CUT_OFF):
+            while(frequency[cut_index_top] < g.FREQUENCY_MAX):
                 cut_index_top += 1
 
             g.main_graph_frame.frequencies = frequency[cut_index:cut_index_top]
@@ -121,10 +133,10 @@ class Visualizer3D(gl.GLViewWidget):
                 time_shift_start = g.main_graph_frame.fft_timestamps[0]
                 g.main_graph_frame.fft_timestamps = g.main_graph_frame.fft_timestamps[-g.SAMPLES_SHOWN_IN_SPECTROGRAM:]
                     
-                #move graph so that is stays in the center
+                #move graph so that is stays visible in the camera
                 time_shift = g.main_graph_frame.fft_timestamps[0]-time_shift_start
                 #since .scale() got called at the beginning all values are multiplied by self.accumulated_scale_factor so we have to consider this, when shifting the graph
-                self.plot_item.translate(-time_shift*self.accumulated_scale_factor, 0, 0)
+                self.plot_item.translate(-time_shift*self.scale_factor_x, 0, 0)
 
             x = np.array(g.main_graph_frame.fft_timestamps)
             y = np.array(g.main_graph_frame.frequencies)

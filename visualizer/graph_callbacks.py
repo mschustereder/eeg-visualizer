@@ -111,7 +111,7 @@ def spectrumPlot(type):
         #we can also cut anything above FREQUENCY_CUT_OFF
             
         cut_index_top = 0
-        while(frequency[cut_index_top] < gl.FREQUENCY_CUT_OFF):
+        while(frequency[cut_index_top] < gl.FREQUENCY_MAX):
             cut_index_top += 1
 
         gl.main_graph_frame.frequencies = frequency[cut_index:cut_index_top]
