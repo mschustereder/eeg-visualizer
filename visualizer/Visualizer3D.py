@@ -15,7 +15,7 @@ class Visualizer3D(gl.GLViewWidget):
     #the values for x, y and z than can be seen from the camera
     x_range = 48
     y_range = 40
-    z_range = 0
+    z_range = 10
     
     def __init__(self):
         super(Visualizer3D, self).__init__()     
@@ -31,6 +31,8 @@ class Visualizer3D(gl.GLViewWidget):
         self.scale_factor_x = 1
         self.scale_factor_y = 1
         self.scale_factor_z = 1
+        self.max = 0
+        self.below_max_count = 0
 
         # we want that the spectrum is always good visible, x and y can be scaled at the beginning, since the paramters don´t change during execution
         frequency_range = g.FREQUENCY_MAX - g.FREQUENCY_MIN
@@ -77,7 +79,7 @@ class Visualizer3D(gl.GLViewWidget):
         gradient_blue_max = g.SPECTRUM_GRAPH_GRADIENT_TOP_COLOR[2]
         gradient_blue_min = g.SPECTRUM_GRAPH_GRADIENT_BOTTOM_COLOR[2]
         for row in values:
-            color_row = []
+            color_row = []      
             for value in row:
                 percentage = value/max_val
                 red = gradient_red_min +  percentage * (gradient_red_max-gradient_red_min)
@@ -138,11 +140,30 @@ class Visualizer3D(gl.GLViewWidget):
                 #since .scale() got called at the beginning all values are multiplied by self.accumulated_scale_factor so we have to consider this, when shifting the graph
                 self.plot_item.translate(-time_shift*self.scale_factor_x, 0, 0)
 
+
+            #scale z axis
+            max_val = np.amax(g.main_graph_frame.fft_vizualizer_values)
+
+            if max_val >= self.max:
+                self.below_max_count = 0
+                self.max = max_val
+            else:
+                self.below_max_count +=1
+
+            #only scale down after enough time has passed
+            if (self.below_max_count > g.EEG_GRAPH_Z_DOWN_SCALE_THRESHOLD):
+                self.max -= 0.1
+
+            shown_max = self.max*self.scale_factor_z
+            scale_z = self.z_range/shown_max
+            if scale_z != 1:
+                self.scale_factor_z = self.scale_factor_z*scale_z
+                self.plot_item.scale(1, 1, scale_z)
+
             x = np.array(g.main_graph_frame.fft_timestamps)
             y = np.array(g.main_graph_frame.frequencies)
             z = np.array(g.main_graph_frame.fft_vizualizer_values)
-            max_val = np.amax(g.main_graph_frame.fft_vizualizer_values)
-            colors = np.array(self.__get_colors(z, max_val))
+            colors = np.array(self.__get_colors(z, self.max))
             self.plot_item.setData(x, y, z, colors = colors)
             
             

@@ -12,6 +12,7 @@ FREQUENCY_MIN = 1
 SPECTRUM_GRAPH_GRADIENT_BOTTOM_COLOR = [65, 23, 105]
 SPECTRUM_GRAPH_GRADIENT_TOP_COLOR = [255, 213, 3]
 EEG_GRAPH_INTERVAL_MS = 50
+EEG_GRAPH_Z_DOWN_SCALE_THRESHOLD = 100
 
 # NOTE: usually it is forbidden to use global variables with Dash, 
 # but due to the simple fact that dcc.storage is way too slow we will use it anyways
