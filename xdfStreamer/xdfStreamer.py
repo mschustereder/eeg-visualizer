@@ -9,7 +9,7 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("xdf_file_path",  type = str, help = "Path to the cdf file that should be streamed")
     parser.add_argument('-c', '--continous', action='store_true', help ="Continous mode: file is streamed in a loop")               
-    parser.add_argument('-e', '--eeg', action='store_true', help ="The stream we are looking for is a EEG stream")               
+    parser.add_argument('-hr', '--heart', action='store_true', help ="The stream we are looking for is a HR stream")               
 
     args = parser.parse_args()
     
@@ -17,7 +17,7 @@ def main():
         print("ERROR: path is not a file")
         exit()
 
-    type = "EEG" if args.eeg else "Markers"
+    type = "Markers" if args.heart else "EEG"
 
     #load xdf file
     streams, file_header = pyxdf.load_xdf(args.xdf_file_path, select_streams=[{'type': type}])
