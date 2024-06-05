@@ -126,11 +126,11 @@ class Visualizer3D(gl.GLViewWidget):
                 #since .scale() got called at the beginning all values are multiplied by self.accumulated_scale_factor so we have to consider this, when shifting the graph
                 self.plot_item.translate(-time_shift*self.accumulated_scale_factor, 0, 0)
 
-                x = np.array(g.main_graph_frame.fft_timestamps)
-                y = np.array(g.main_graph_frame.frequencies)
-                z = np.array(g.main_graph_frame.fft_vizualizer_values)
-                max_val = np.amax(g.main_graph_frame.fft_vizualizer_values)
-                colors = np.array(self.__get_colors(z, max_val))
-                self.plot_item.setData(x, y, z, colors = colors)
+            x = np.array(g.main_graph_frame.fft_timestamps)
+            y = np.array(g.main_graph_frame.frequencies)
+            z = np.array(g.main_graph_frame.fft_vizualizer_values)
+            max_val = np.amax(g.main_graph_frame.fft_vizualizer_values)
+            colors = np.array(self.__get_colors(z, max_val))
+            self.plot_item.setData(x, y, z, colors = colors)
             
             
