@@ -9,10 +9,12 @@ from statistics import mean
 
 
 class Visualizer3D(gl.GLViewWidget):
-
-    scale_factor_x = 10
     grid_size = 200
     grid_space = 5
+
+    #the values for x and z than can be seen from the camera
+    x_range = 48
+    z_range = 0
     
     def __init__(self):
         super(Visualizer3D, self).__init__()     
@@ -20,15 +22,14 @@ class Visualizer3D(gl.GLViewWidget):
         self.grid_item = gl.GLGridItem()
         self.grid_item.setColor((0, 0, 0, 80))
         self.grid_item.setSize(self.grid_size, self.grid_size)
-        #self.grid_item.translate(self.grid_size/2, 0, 0)
         self.grid_item.setSpacing(self.grid_space, self.grid_space)
         self.addItem(self.grid_item)
         self.plot_item = gl.GLSurfacePlotItem(np.zeros(10), np.zeros(10), np.zeros((10, 10)))
-        self.plot_item.scale(self.scale_factor_x, 1, 1)
         self.addItem(self.plot_item)
         frequency_range = g.FREQUENCY_MIN_MAX_BOUND[1] - g.FREQUENCY_MIN_MAX_BOUND[0]
         self.plot_item.translate(0, frequency_range/2-1, 0)
         self.setCameraPosition(elevation=5, azimuth=-1, distance=80)
+        self.accumulated_scale_factor = 1
 
     def wheelEvent(self, ev):
         pass
@@ -86,6 +87,13 @@ class Visualizer3D(gl.GLViewWidget):
             sample_time = data[-1][1] - data[0][1] #this is the time that has passed in the sample world
             frequency, fft_magnitude_normalized = fft.calculate_fft(g.main_graph_frame.fft_values_buffer, sampling_rate)
 
+            # we want that the spectrum is always good visible, theoretically we always show g.EEG_GRAPH_INTERVAL_MS*0.001* g.SAMPLES_SHOWN_IN_SPECTROGRAM seconds so we will use this to scale the graph
+            shown = (g.EEG_GRAPH_INTERVAL_MS*0.001* g.SAMPLES_SHOWN_IN_SPECTROGRAM)*self.accumulated_scale_factor
+            scale = self.x_range/shown
+            if scale != 1:
+                self.accumulated_scale_factor = self.accumulated_scale_factor*scale
+                self.plot_item.scale(scale, 1, 1) # scale is relative i.e if it was scaled before it will scale the already scaled values
+
             #we dont want the offset a 0 Hz included, so we will cut off every frequency below 1 Hz
             cut_index = 0
             while(frequency[cut_index] < 1):
@@ -112,16 +120,17 @@ class Visualizer3D(gl.GLViewWidget):
                 g.main_graph_frame.fft_vizualizer_values = g.main_graph_frame.fft_vizualizer_values[-g.SAMPLES_SHOWN_IN_SPECTROGRAM:]
                 time_shift_start = g.main_graph_frame.fft_timestamps[0]
                 g.main_graph_frame.fft_timestamps = g.main_graph_frame.fft_timestamps[-g.SAMPLES_SHOWN_IN_SPECTROGRAM:]
+                    
                 #move graph so that is stays in the center
                 time_shift = g.main_graph_frame.fft_timestamps[0]-time_shift_start
-                #since .scale() got called at the beginning all values are multiplied by self.scale_factor_x so we have to consider this, when shifting the graph
-                self.plot_item.translate(-time_shift*self.scale_factor_x, 0, 0)
+                #since .scale() got called at the beginning all values are multiplied by self.accumulated_scale_factor so we have to consider this, when shifting the graph
+                self.plot_item.translate(-time_shift*self.accumulated_scale_factor, 0, 0)
 
-            x = np.array(g.main_graph_frame.fft_timestamps)
-            y = np.array(g.main_graph_frame.frequencies)
-            z = np.array(g.main_graph_frame.fft_vizualizer_values)
-            max_val = np.amax(g.main_graph_frame.fft_vizualizer_values)
-            colors = np.array(self.__get_colors(z, max_val))
-            self.plot_item.setData(x, y, z, colors = colors)
+                x = np.array(g.main_graph_frame.fft_timestamps)
+                y = np.array(g.main_graph_frame.frequencies)
+                z = np.array(g.main_graph_frame.fft_vizualizer_values)
+                max_val = np.amax(g.main_graph_frame.fft_vizualizer_values)
+                colors = np.array(self.__get_colors(z, max_val))
+                self.plot_item.setData(x, y, z, colors = colors)
             
             

@@ -11,6 +11,7 @@ FREQUENCY_CUT_OFF = 40
 FREQUENCY_MIN_MAX_BOUND = [FREQUENCY_CUT_OFF, 1]
 SPECTRUM_GRAPH_GRADIENT_BOTTOM_COLOR = [65, 23, 105]
 SPECTRUM_GRAPH_GRADIENT_TOP_COLOR = [255, 213, 3]
+EEG_GRAPH_INTERVAL_MS = 50
 
 # NOTE: usually it is forbidden to use global variables with Dash, 
 # but due to the simple fact that dcc.storage is way too slow we will use it anyways

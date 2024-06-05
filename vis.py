@@ -17,7 +17,7 @@ if __name__ == "__main__":
     vis = Visualizer3D()
     timer = QtCore.QTimer()
     timer.timeout.connect(vis.update_spectrum)
-    timer.setInterval(50)
+    timer.setInterval(gl.EEG_GRAPH_INTERVAL_MS)
     timer.start()
     window.setCentralWidget(vis)
     window.show()
