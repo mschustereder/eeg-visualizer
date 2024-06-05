@@ -9,14 +9,18 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("xdf_file_path",  type = str, help = "Path to the cdf file that should be streamed")
     parser.add_argument('-c', '--continous', action='store_true', help ="Continous mode: file is streamed in a loop")               
+    parser.add_argument('-e', '--eeg', action='store_true', help ="The stream we are looking for is a EEG stream")               
+
     args = parser.parse_args()
     
     if not os.path.isfile(args.xdf_file_path):
         print("ERROR: path is not a file")
         exit()
 
+    type = "EEG" if args.eeg else "Markers"
+
     #load xdf file
-    streams, file_header = pyxdf.load_xdf(args.xdf_file_path, select_streams=[{'type': 'EEG'}])
+    streams, file_header = pyxdf.load_xdf(args.xdf_file_path, select_streams=[{'type': type}])
     print("loaded xdf")
     continous_mode = args.continous
     print("Coninous mode: " + str(continous_mode))
@@ -26,13 +30,15 @@ def main():
     active_streams = 0
     for stream in streams:
         info = StreamInfo(stream["info"]["name"][0], stream["info"]["type"][0], int(stream["info"]["channel_count"][0]), float(stream["info"]["nominal_srate"][0]), stream["info"]["channel_format"][0])
-        channels_info = info.desc().append_child("channels")
         
-        for channel in stream["info"]["desc"][0]["channels"][0]["channel"]:
-            channel_info = channels_info.append_child("channel")
-            channel_info.append_child_value("label", channel["label"][0])
-            channel_info.append_child_value("unit", channel["unit"][0])
-            channel_info.append_child_value("type", channel["type"][0])
+        if stream["info"]["type"][0] == "EEG":
+            channels_info = info.desc().append_child("channels")
+            
+            for channel in stream["info"]["desc"][0]["channels"][0]["channel"]:
+                channel_info = channels_info.append_child("channel")
+                channel_info.append_child_value("label", channel["label"][0])
+                channel_info.append_child_value("unit", channel["unit"][0])
+                channel_info.append_child_value("type", channel["type"][0])
 
         #for each stream store realated data into a dict
         streams_data.append({"outlet" : StreamOutlet(info), 
@@ -40,7 +46,7 @@ def main():
                              "time_since_last_sent_sample" : time.time(), 
                              "data_index" : 0, 
                              "is_active" : True,
-                             "period" : 1/float(stream["info"]["nominal_srate"][0])}) 
+                             "period" : 0 if float(stream["info"]["nominal_srate"][0]) == 0 else  1/float(stream["info"]["nominal_srate"][0])}) 
         active_streams +=1
 
     print("Starting to stream data")
@@ -51,25 +57,31 @@ def main():
                 continue
 
             curr_time = time.time()
-            if ((curr_time-current_stream["time_since_last_sent_sample"]) >= current_stream["period"]):
-                data = current_stream["stream"]["time_series"]
+            if current_stream["stream"]["info"]["type"][0] == "Markers": #here the samples need to be sent according to their timestamps
+                current_data_index = current_stream["data_index"]
+                previous_data_index = current_stream["data_index"] - 1
+                if not previous_data_index < 0:
+                    if curr_time-current_stream["time_since_last_sent_sample"] < current_stream["stream"]["time_stamps"][current_data_index] - current_stream["stream"]["time_stamps"][previous_data_index] :continue
 
-                data_count = data.shape[0]
-                if (current_stream["data_index"] >= data_count):
-                    if (continous_mode):
-                        current_stream["data_index"] = 0 #just reset index in continuos mode
-                    else:
-                        active_streams -=1
-                        current_stream["is_active"] = False
-                        continue
-                current_stream["outlet"].push_sample(data[current_stream["data_index"]])
+            elif ((curr_time-current_stream["time_since_last_sent_sample"]) < current_stream["period"]): continue
+            data = current_stream["stream"]["time_series"]
 
-                #only log every 1000th sample to not overwhelm the console
-                if (not current_stream['data_index'] % 1000): 
-                    print(f"Stream {stream_index} sent sample {current_stream['data_index']} / {data_count}")
+            data_count = data.shape[0]
+            if (current_stream["data_index"] >= data_count):
+                if (continous_mode):
+                    current_stream["data_index"] = 0 #just reset index in continuos mode
+                else:
+                    active_streams -=1
+                    current_stream["is_active"] = False
+                    continue
+            current_stream["outlet"].push_sample(data[current_stream["data_index"]])
 
-                current_stream["time_since_last_sent_sample"] = time.time()
-                current_stream["data_index"] += 1
+            #only log every 1000th sample to not overwhelm the console
+            if current_stream["stream"]["info"]["type"][0] == "Markers" or (current_stream["stream"]["info"]["type"][0] == "EEG" and (not current_stream['data_index'] % 1000)): #prints every sample for Markers and every 1000 for EEG
+                print(f"Stream {stream_index} sent sample {current_stream['data_index']} / {data_count}")
+
+            current_stream["time_since_last_sent_sample"] = time.time()
+            current_stream["data_index"] += 1
     print("Stopping to stream data")
 
 if __name__ == "__main__":
