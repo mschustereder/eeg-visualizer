@@ -107,25 +107,29 @@ class Visualizer3D(gl.GLViewWidget):
                 color_row.append([red/255, green/255, blue/255])
             colors.append(color_row)
         return colors
+    
+    def scale_z(self):
+        #scale z axis
+        max_val = np.amax(self.data.fft_vizualizer_values)
 
-    def update_spectrum(self):
-        data = g.eeg_processor.get_eeg_data_as_chunk()
+        if max_val >= self.max:
+            self.below_max_count = 0
+            self.max = max_val
+        else:
+            self.below_max_count +=1
 
-        if data == None:
-            return
-        
-        for sample in data:
-            self.data.fft_values_buffer.append(mean(list(sample[0].values())))
+        #only scale up after enough time has passed
+        if (self.below_max_count > g.EEG_GRAPH_Z_DOWN_SCALE_THRESHOLD):
+            self.max *= g.EEG_GRAPH_Z_DOWN_SCALE_FACTOR
+            print("scale up")
 
-        #only update graph if accumulated data is FFT_SAMPLES samples long
-        if len(self.data.fft_values_buffer) >= g.FFT_SAMPLES:
+        shown_max = self.max*self.scale_factor_z
+        scale_z = self.z_range/shown_max
+        if scale_z != 1:
+            self.scale_factor_z = self.scale_factor_z*scale_z
+            self.plot_item.scale(1, 1, scale_z)
 
-            #we want to get a spectrum every 100ms, so we will calulate overlapping fft windows, and thus use the fft_values_buffer as a FIFO buffer
-            self.data.fft_values_buffer = self.data.fft_values_buffer[-g.FFT_SAMPLES:] 
-            sampling_rate = g.eeg_processor.stream.nominal_srate()
-            sample_time = data[-1][1] - data[0][1] #this is the time that has passed in the sample world
-            frequency, fft_magnitude_normalized = fft.calculate_fft(self.data.fft_values_buffer, sampling_rate)
-
+    def prepare_data_for_plotting(self, fft_magnitude_normalized, frequency, sample_time):
             #we dont want the offset a 0 Hz included, so we will cut off every frequency below 1 Hz
             cut_index = 0
             while(frequency[cut_index] < g.FREQUENCY_MIN):
@@ -146,7 +150,7 @@ class Visualizer3D(gl.GLViewWidget):
             else:
                 self.data.fft_timestamps.append(self.data.fft_timestamps[-1] + sample_time)
 
-            
+
             #only show the last SAMPLES_SHOWN_IN_SPECTROGRAM samples
             if len(self.data.fft_vizualizer_values) > g.SAMPLES_SHOWN_IN_SPECTROGRAM:
                 self.data.fft_vizualizer_values = self.data.fft_vizualizer_values[-g.SAMPLES_SHOWN_IN_SPECTROGRAM:]
@@ -156,26 +160,25 @@ class Visualizer3D(gl.GLViewWidget):
                 self.data.fft_timestamps = [timestamp-shift_back_time for timestamp in self.data.fft_timestamps]
 
 
-            #scale z axis
-            max_val = np.amax(self.data.fft_vizualizer_values)
+    def update_spectrum(self):
+        data = g.eeg_processor.get_eeg_data_as_chunk()
 
-            if max_val >= self.max:
-                self.below_max_count = 0
-                self.max = max_val
-            else:
-                self.below_max_count +=1
+        if data == None:
+            return
+        
+        for sample in data:
+            self.data.fft_values_buffer.append(mean(list(sample[0].values())))
 
-            #only scale up after enough time has passed
-            if (self.below_max_count > g.EEG_GRAPH_Z_DOWN_SCALE_THRESHOLD):
-                self.max *= g.EEG_GRAPH_Z_DOWN_SCALE_FACTOR
-                print("scale up")
+        #only update graph if accumulated data is FFT_SAMPLES samples long
+        if len(self.data.fft_values_buffer) >= g.FFT_SAMPLES:
 
-            shown_max = self.max*self.scale_factor_z
-            scale_z = self.z_range/shown_max
-            if scale_z != 1:
-                self.scale_factor_z = self.scale_factor_z*scale_z
-                self.plot_item.scale(1, 1, scale_z)
-
+            #we want to get a spectrum every 100ms, so we will calulate overlapping fft windows, and thus use the fft_values_buffer as a FIFO buffer
+            self.data.fft_values_buffer = self.data.fft_values_buffer[-g.FFT_SAMPLES:] 
+            sampling_rate = g.eeg_processor.stream.nominal_srate()
+            sample_time = data[-1][1] - data[0][1] #this is the time that has passed in the sample world
+            frequency, fft_magnitude_normalized = fft.calculate_fft(self.data.fft_values_buffer, sampling_rate)
+            self.prepare_data_for_plotting(fft_magnitude_normalized, frequency, sample_time)
+            self.scale_z()
             x = np.array(self.data.fft_timestamps)
             y = np.array(self.data.frequencies)
             z = np.array(self.data.fft_vizualizer_values)
