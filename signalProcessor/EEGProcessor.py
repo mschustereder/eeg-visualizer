@@ -84,20 +84,15 @@ class EEGProcessor:
             return list_of_data_dicts
         return None
     
-    def get_filtered_eeg_data(self, n_samples: int, filter: Filter) -> Tuple[Dict,float]:
-        data_buffer = []
-        while len(data_buffer) < n_samples:
-            data_to_append = self.get_eeg_data_as_chunk()
-            if data_to_append != None:
-                data_buffer += data_to_append
-        # data_buffer = data_buffer[:n_samples]
-        list_without_keys = [[v for v in d[0].values()] for d in data_buffer]
+    def filter_eeg_data(self, data, filter: Filter) : 
+        # list_without_keys = [[v for v in d[0].values()] for d in data]
+        list_without_keys = data
         filtered_data = mne.filter.filter_data(np.array(list_without_keys).T, self.sampling_frequency, l_freq=filter[0], h_freq=filter[1], verbose=False)
-        for i, d in enumerate(data_buffer):
-            for j, key in enumerate(d[0]):
-                d[0][key] = filtered_data[j][i]
+        # for i, d in enumerate(data):
+        #     for j, key in enumerate(d[0]):
+        #         d[0][key] = filtered_data[j][i]
         
-        return data_buffer
+        return filtered_data.T
 
     def return_topoplot_matplotlib_figure(self):
         channel_names = []
