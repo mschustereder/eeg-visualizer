@@ -1,6 +1,6 @@
 from  lslHandler.lslHandler import LslHandler
-from visualizer.EEGGraphFrame import EEGGraphFrame
-from visualizer.HRGraphFrame import HRGraphFrame
+
+
 
 #CONSTANTS
 
@@ -26,6 +26,4 @@ lsl_handler = LslHandler()
 eeg_processor = None
 hr_processor = None
 
-#holds the data that the graph is displaying
-main_graph_frame = EEGGraphFrame()
  

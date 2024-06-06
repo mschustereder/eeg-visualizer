@@ -4,6 +4,7 @@ import numpy as np
 from signalProcessor import fft
 import visualizer.globals as g
 from statistics import mean
+from visualizer.EEGGraphFrame import EEGGraphFrame
 
 # class AxeTicks():
 #     def __init__(self, parent : gl.GLViewWidget, label):
@@ -47,6 +48,7 @@ class Visualizer3D(gl.GLViewWidget):
         self.scale_factor_z = 1
         self.max = 0
         self.below_max_count = 0
+        self.data = EEGGraphFrame()
         # self.freq_ticks = AxeTicks(self, "Frequency")
         # self.freq_ticks.set_label_pos(0, 0, 0)
 
@@ -113,16 +115,16 @@ class Visualizer3D(gl.GLViewWidget):
             return
         
         for sample in data:
-            g.main_graph_frame.fft_values_buffer.append(mean(list(sample[0].values())))
+            self.data.fft_values_buffer.append(mean(list(sample[0].values())))
 
         #only update graph if accumulated data is FFT_SAMPLES samples long
-        if len(g.main_graph_frame.fft_values_buffer) >= g.FFT_SAMPLES:
+        if len(self.data.fft_values_buffer) >= g.FFT_SAMPLES:
 
             #we want to get a spectrum every 100ms, so we will calulate overlapping fft windows, and thus use the fft_values_buffer as a FIFO buffer
-            g.main_graph_frame.fft_values_buffer = g.main_graph_frame.fft_values_buffer[-g.FFT_SAMPLES:] 
+            self.data.fft_values_buffer = self.data.fft_values_buffer[-g.FFT_SAMPLES:] 
             sampling_rate = g.eeg_processor.stream.nominal_srate()
             sample_time = data[-1][1] - data[0][1] #this is the time that has passed in the sample world
-            frequency, fft_magnitude_normalized = fft.calculate_fft(g.main_graph_frame.fft_values_buffer, sampling_rate)
+            frequency, fft_magnitude_normalized = fft.calculate_fft(self.data.fft_values_buffer, sampling_rate)
 
             #we dont want the offset a 0 Hz included, so we will cut off every frequency below 1 Hz
             cut_index = 0
@@ -135,30 +137,30 @@ class Visualizer3D(gl.GLViewWidget):
             while(frequency[cut_index_top] < g.FREQUENCY_MAX):
                 cut_index_top += 1
 
-            g.main_graph_frame.frequencies = frequency[cut_index:cut_index_top]
-            g.main_graph_frame.fft_vizualizer_values.append(fft_magnitude_normalized[cut_index:cut_index_top])
+            self.data.frequencies = frequency[cut_index:cut_index_top]
+            self.data.fft_vizualizer_values.append(fft_magnitude_normalized[cut_index:cut_index_top])
 
             #we are using relative times from the first sample to the last sample in the fft_visualizer_values
-            if len(g.main_graph_frame.fft_timestamps)==0:
-                g.main_graph_frame.fft_timestamps.append(sample_time)
+            if len(self.data.fft_timestamps)==0:
+                self.data.fft_timestamps.append(sample_time)
             else:
-                g.main_graph_frame.fft_timestamps.append(g.main_graph_frame.fft_timestamps[-1] + sample_time)
+                self.data.fft_timestamps.append(self.data.fft_timestamps[-1] + sample_time)
 
             
             #only show the last SAMPLES_SHOWN_IN_SPECTROGRAM samples
-            if len(g.main_graph_frame.fft_vizualizer_values) > g.SAMPLES_SHOWN_IN_SPECTROGRAM:
-                g.main_graph_frame.fft_vizualizer_values = g.main_graph_frame.fft_vizualizer_values[-g.SAMPLES_SHOWN_IN_SPECTROGRAM:]
-                time_shift_start = g.main_graph_frame.fft_timestamps[0]
-                g.main_graph_frame.fft_timestamps = g.main_graph_frame.fft_timestamps[-g.SAMPLES_SHOWN_IN_SPECTROGRAM:]
+            if len(self.data.fft_vizualizer_values) > g.SAMPLES_SHOWN_IN_SPECTROGRAM:
+                self.data.fft_vizualizer_values = self.data.fft_vizualizer_values[-g.SAMPLES_SHOWN_IN_SPECTROGRAM:]
+                time_shift_start = self.data.fft_timestamps[0]
+                self.data.fft_timestamps = self.data.fft_timestamps[-g.SAMPLES_SHOWN_IN_SPECTROGRAM:]
                     
                 #move graph so that is stays visible in the camera
-                time_shift = g.main_graph_frame.fft_timestamps[0]-time_shift_start
+                time_shift = self.data.fft_timestamps[0]-time_shift_start
                 #since .scale() got called at the beginning all values are multiplied by self.accumulated_scale_factor so we have to consider this, when shifting the graph
                 self.plot_item.translate(-time_shift*self.scale_factor_x, 0, 0)
 
 
             #scale z axis
-            max_val = np.amax(g.main_graph_frame.fft_vizualizer_values)
+            max_val = np.amax(self.data.fft_vizualizer_values)
 
             if max_val >= self.max:
                 self.below_max_count = 0
@@ -176,9 +178,9 @@ class Visualizer3D(gl.GLViewWidget):
                 self.scale_factor_z = self.scale_factor_z*scale_z
                 self.plot_item.scale(1, 1, scale_z)
 
-            x = np.array(g.main_graph_frame.fft_timestamps)
-            y = np.array(g.main_graph_frame.frequencies)
-            z = np.array(g.main_graph_frame.fft_vizualizer_values)
+            x = np.array(self.data.fft_timestamps)
+            y = np.array(self.data.frequencies)
+            z = np.array(self.data.fft_vizualizer_values)
             colors = np.array(self.__get_colors(z, self.max))
             self.plot_item.setData(x, y, z, colors = colors)
             
