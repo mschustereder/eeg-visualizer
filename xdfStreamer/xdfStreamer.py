@@ -65,8 +65,17 @@ def main():
 
             elif ((curr_time-current_stream["time_since_last_sent_sample"]) < current_stream["period"]): continue
             data = current_stream["stream"]["time_series"]
-
             data_count = data.shape[0]
+
+            current_stream["outlet"].push_sample(data[current_stream["data_index"]])
+
+            #only log every 1000th sample to not overwhelm the console
+            if current_stream["stream"]["info"]["type"][0] == "Markers" or (current_stream["stream"]["info"]["type"][0] == "EEG" and (not current_stream['data_index'] % 1000)): #prints every sample for Markers and every 1000 for EEG
+                print(f"Stream {stream_index} sent sample {current_stream['data_index']+1} / {data_count}")
+
+            current_stream["time_since_last_sent_sample"] = time.time()
+            current_stream["data_index"] += 1
+
             if (current_stream["data_index"] >= data_count):
                 if (continous_mode):
                     current_stream["data_index"] = 0 #just reset index in continuos mode
@@ -74,14 +83,7 @@ def main():
                     active_streams -=1
                     current_stream["is_active"] = False
                     continue
-            current_stream["outlet"].push_sample(data[current_stream["data_index"]])
 
-            #only log every 1000th sample to not overwhelm the console
-            if current_stream["stream"]["info"]["type"][0] == "Markers" or (current_stream["stream"]["info"]["type"][0] == "EEG" and (not current_stream['data_index'] % 1000)): #prints every sample for Markers and every 1000 for EEG
-                print(f"Stream {stream_index} sent sample {current_stream['data_index']} / {data_count}")
-
-            current_stream["time_since_last_sent_sample"] = time.time()
-            current_stream["data_index"] += 1
     print("Stopping to stream data")
 
 if __name__ == "__main__":
