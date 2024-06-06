@@ -63,10 +63,10 @@ class EEGProcessor:
             return data_dict, timestamp
         return None
     
-    def get_eeg_data_as_chunk(self) -> List[Tuple[Dict,float]]:
+    def get_eeg_data_as_chunk(self, max_samples=1024) -> List[Tuple[Dict,float]]:
         list_of_data_dicts = []
 
-        data_list = self.lslhandler.get_available_data_as_chunk(self.stream)
+        data_list = self.lslhandler.get_available_data_as_chunk(self.stream, max_samples)
         if data_list: # an empty list evaluates to False
             for data in data_list:
                 data_dict = {}
