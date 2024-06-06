@@ -42,7 +42,7 @@ class Visualizer3D(gl.GLViewWidget):
         self.addItem(self.grid_item)
         self.plot_item = gl.GLSurfacePlotItem(np.zeros(10), np.zeros(10), np.zeros((10, 10)))
         self.addItem(self.plot_item)
-        self.setCameraPosition(elevation=5, azimuth=-1, distance=80)
+        self.setCameraPosition(elevation=5, azimuth=-1, distance=85)
         self.scale_factor_x = 1
         self.scale_factor_y = 1
         self.scale_factor_z = 1
@@ -150,13 +150,10 @@ class Visualizer3D(gl.GLViewWidget):
             #only show the last SAMPLES_SHOWN_IN_SPECTROGRAM samples
             if len(self.data.fft_vizualizer_values) > g.SAMPLES_SHOWN_IN_SPECTROGRAM:
                 self.data.fft_vizualizer_values = self.data.fft_vizualizer_values[-g.SAMPLES_SHOWN_IN_SPECTROGRAM:]
-                time_shift_start = self.data.fft_timestamps[0]
                 self.data.fft_timestamps = self.data.fft_timestamps[-g.SAMPLES_SHOWN_IN_SPECTROGRAM:]
-                    
-                #move graph so that is stays visible in the camera
-                time_shift = self.data.fft_timestamps[0]-time_shift_start
-                #since .scale() got called at the beginning all values are multiplied by self.accumulated_scale_factor so we have to consider this, when shifting the graph
-                self.plot_item.translate(-time_shift*self.scale_factor_x, 0, 0)
+                shift_back_time = self.data.fft_timestamps[0]
+                #keep Graph in place, or else it will move inside the widged with time
+                self.data.fft_timestamps = [timestamp-shift_back_time for timestamp in self.data.fft_timestamps]
 
 
             #scale z axis
@@ -168,9 +165,10 @@ class Visualizer3D(gl.GLViewWidget):
             else:
                 self.below_max_count +=1
 
-            #only scale down after enough time has passed
+            #only scale up after enough time has passed
             if (self.below_max_count > g.EEG_GRAPH_Z_DOWN_SCALE_THRESHOLD):
-                self.max -= 0.1
+                self.max *= g.EEG_GRAPH_Z_DOWN_SCALE_FACTOR
+                print("scale up")
 
             shown_max = self.max*self.scale_factor_z
             scale_z = self.z_range/shown_max
