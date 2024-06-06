@@ -5,7 +5,21 @@ from signalProcessor import fft
 import visualizer.globals as g
 from statistics import mean
 
-#todo: retrive x and z scale from data
+# class AxeTicks():
+#     def __init__(self, parent : gl.GLViewWidget, label):
+#         super().__init__()
+#         self.frequency_label = gl.GLTextItem()
+#         self.frequency_label.setData(text = label, color = (0, 0, 0))
+#         self.parent = parent
+#         parent.addItem(self.frequency_label)
+#         self.frequency_label.scale()
+
+#     def set_label_pos(self, x, y, z):
+#         self.frequency_label.setData(pos = (x, y, z))
+
+#     def add_ticks(self, ticks):
+#         pass
+
 
 
 class Visualizer3D(gl.GLViewWidget):
@@ -18,7 +32,7 @@ class Visualizer3D(gl.GLViewWidget):
     z_range = 10
     
     def __init__(self):
-        super(Visualizer3D, self).__init__()     
+        super().__init__()     
         self.setBackgroundColor(255, 255, 255)
         self.grid_item = gl.GLGridItem()
         self.grid_item.setColor((0, 0, 0, 80))
@@ -33,6 +47,8 @@ class Visualizer3D(gl.GLViewWidget):
         self.scale_factor_z = 1
         self.max = 0
         self.below_max_count = 0
+        # self.freq_ticks = AxeTicks(self, "Frequency")
+        # self.freq_ticks.set_label_pos(0, 0, 0)
 
         # we want that the spectrum is always good visible, x and y can be scaled at the beginning, since the paramters don´t change during execution
         frequency_range = g.FREQUENCY_MAX - g.FREQUENCY_MIN
@@ -49,6 +65,7 @@ class Visualizer3D(gl.GLViewWidget):
             self.plot_item.scale(scale_x, 1, 1)
         
         self.plot_item.translate(0, (-frequency_range/2 - g.FREQUENCY_MIN)*self.scale_factor_y, 0)
+
 
     #disable all interaction mechanisms by overriding the corresponding functions
         
@@ -88,7 +105,6 @@ class Visualizer3D(gl.GLViewWidget):
                 color_row.append([red/255, green/255, blue/255])
             colors.append(color_row)
         return colors
-
 
     def update_spectrum(self):
         data = g.eeg_processor.get_eeg_data_as_chunk()
