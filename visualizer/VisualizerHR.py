@@ -3,7 +3,6 @@ from pyqtgraph.Qt import QtCore, QtGui, QtWidgets
 import numpy as np
 import visualizer.globals as g
 from visualizer.HRGraphFrame import HRGraphFrame
-import random
 import time
 from enum import Enum, auto
 
@@ -25,6 +24,8 @@ class VisualizerHR(pg.PlotWidget):
         self.data = HRGraphFrame()
         self.graph_start_time = time.time()
         self.bio_variable = HR_BIO_VARIABLE.BPM
+        self.max = None
+        self.below_max_count = 0
 
 
     def cut_hr_buffer(self):
@@ -38,16 +39,36 @@ class VisualizerHR(pg.PlotWidget):
             self.data.graph_values = self.data.graph_values[cut_index:]
 
     def get_x_time_range(self):
-        range_x=[0, 45]
+        range_x=[0, g.HR_GRAPH_TIME_RANGE_SEC]
         
         if len(self.data.timestamps) != 0:
-            range_x = [self.data.timestamps[0], self.data.timestamps[0]+45]
+            range_x = [self.data.timestamps[0], self.data.timestamps[0]+g.HR_GRAPH_TIME_RANGE_SEC]
 
         return range_x
     
 
     def set_bio_variable(self, bio_variable : HR_BIO_VARIABLE):
         self.bio_variable = bio_variable
+        self.data = HRGraphFrame()
+        self.max = None
+        self.below_max_count = 0
+
+    def get_y_range(self):
+        curr_max = np.amax(self.data.graph_values)
+        
+        if (self.max is None or curr_max > self.max):
+            self.max = curr_max*1.2
+            self.below_max_count = 0
+        elif curr_max < self.max*0.5:
+            self.below_max_count += 1
+            
+
+        #only scale up after enough time has passed
+        if (self.below_max_count > g.HR_GRAPH_Y_UP_SCALE_THRESHOLD):
+            self.max *= g.HR_GRAPH_Y_UP_SCALE_FACTOR
+            print("scale up y")
+
+        return [0, self.max]
 
     def update_graph(self):
         if g.hr_processor == None:
@@ -92,5 +113,7 @@ class VisualizerHR(pg.PlotWidget):
         
         self.cut_hr_buffer()
         self.setXRange(*self.get_x_time_range())
+        self.setYRange(*self.get_y_range())
+
 
         self.line_plot.setData(self.data.timestamps, self.data.graph_values)

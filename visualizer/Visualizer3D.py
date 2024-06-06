@@ -119,8 +119,8 @@ class Visualizer3D(gl.GLViewWidget):
             self.below_max_count +=1
 
         #only scale up after enough time has passed
-        if (self.below_max_count > g.EEG_GRAPH_Z_DOWN_SCALE_THRESHOLD):
-            self.max *= g.EEG_GRAPH_Z_DOWN_SCALE_FACTOR
+        if (self.below_max_count > g.EEG_GRAPH_Z_UP_SCALE_THRESHOLD):
+            self.max *= g.EEG_GRAPH_Z_UP_SCALE_FACTOR
             print("scale up")
 
         shown_max = self.max*self.scale_factor_z
