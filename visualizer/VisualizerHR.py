@@ -4,7 +4,15 @@ import numpy as np
 import visualizer.globals as g
 from visualizer.HRGraphFrame import HRGraphFrame
 import random
+import time
+from enum import Enum, auto
 
+
+class HR_BIO_VARIABLE(Enum):
+    BPM = auto()
+    RMSSD = auto()
+    SDNN = auto()
+    POI_RAT = auto()
 
 
 class VisualizerHR(pg.PlotWidget):
@@ -14,12 +22,13 @@ class VisualizerHR(pg.PlotWidget):
         self.showGrid(x = True, y = True)
         self.setBackground((255, 255, 255))
         self.line_plot = self.plot(np.zeros(10), np.zeros(10), pen = pg.mkPen(color = (0, 0, 255)))
-        self.setYRange(0, 1)
         self.data = HRGraphFrame()
+        self.graph_start_time = time.time()
+        self.bio_variable = HR_BIO_VARIABLE.BPM
 
 
     def cut_hr_buffer(self):
-        # we only need the last 45 seconds
+        # we only need the last HR_GRAPH_TIME_RANGE_SEC seconds
         time_diff = self.data.timestamps[-1]  - self.data.timestamps[0]
         if time_diff > g.HR_GRAPH_TIME_RANGE_SEC:
             cut_index = 0
@@ -35,32 +44,51 @@ class VisualizerHR(pg.PlotWidget):
             range_x = [self.data.timestamps[0], self.data.timestamps[0]+45]
 
         return range_x
+    
 
+    def set_bio_variable(self, bio_variable : HR_BIO_VARIABLE):
+        self.bio_variable = bio_variable
 
     def update_graph(self):
-        # if g.hr_processor == None:
-        #     return no_update
+        if g.hr_processor == None:
+            return
 
-        # data = None
+        data = None
+        sample = None
 
-        # if data == None:
-        #     return no_update
+        match self.bio_variable:
+
+            case HR_BIO_VARIABLE.BPM:
+                data = g.hr_processor.get_bpm_data() # tupple ([sample], timestamp)
+                if data is not None:
+                    sample = data[0]
+            case HR_BIO_VARIABLE.RMSSD:
+                data = g.hr_processor.get_rmssd_data() #float val
+                if data is not None:
+                    sample = [data]
+            case HR_BIO_VARIABLE.SDNN:
+                data =  g.hr_processor.get_sdnn_data() #float val
+                if data is not None:
+                    sample = [data]
+            case HR_BIO_VARIABLE.POI_RAT:
+                data =  g.hr_processor.get_poincare_ratio() #float val
+                if data is not None:
+                    sample = [data]
+            case _:
+                raise ValueError("invalid bio variable")
+
+
+        if data is None:
+
+            if (len(self.data.graph_values) != 0):
+                sample = [self.data.graph_values[-1]]
+            else:
+                sample = [0]
         
-        # if aux_selection == "BPM":
-        #     data = g.hr_processor.get_bpm_data()
-        # elif aux_selection == "RMSSD":
-        #     data = g.hr_processor.get_rmssd_data()
-        # elif aux_selection == "SDNN":
-        #     data =  g.hr_processor.get_sdnn_data()
-        # else:
-        #     data =  g.hr_processor.get_poincare_ratio()
+        timestamp = time.time() - self.graph_start_time
 
-
-        self.data.graph_values.append(random.random())
-        if len(self.data.timestamps) != 0:
-            self.data.timestamps.append(self.data.timestamps[len(self.data.timestamps)-1] + 0.1)
-        else:
-            self.data.timestamps.append(0)
+        self.data.graph_values.extend(sample)
+        self.data.timestamps.append(timestamp)
         
         self.cut_hr_buffer()
         self.setXRange(*self.get_x_time_range())
