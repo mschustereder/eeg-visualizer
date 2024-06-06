@@ -4,12 +4,25 @@ from typing import Dict, Tuple, List
 import numpy as np
 import mne
 import matplotlib.pyplot as plt
+from dataclasses import dataclass
+
+
 
 DELTA_BAND = (0.1,4)
 THETA_BAND = (4,8)
 ALPHA_BAND = (8,13)
 BETA_BAND = (13,30)
 GAMMA_BAND = (30,100)
+
+@dataclass
+class Filter:
+    Delta : Tuple = DELTA_BAND
+    Theta : Tuple = THETA_BAND
+    Alpha : Tuple = ALPHA_BAND
+    Beta : Tuple = BETA_BAND
+    Gamma : Tuple = GAMMA_BAND
+
+
 #Source: https://de.wikipedia.org/wiki/Elektroenzephalografie#EEG-Frequenzb%C3%A4nder_und_Graphoelemente
 
 class EEGProcessor:
@@ -50,10 +63,10 @@ class EEGProcessor:
             return data_dict, timestamp
         return None
     
-    def get_eeg_data_as_chunk(self) -> List[Tuple[Dict,float]]:
+    def get_eeg_data_as_chunk(self, max_samples=1024) -> List[Tuple[Dict,float]]:
         list_of_data_dicts = []
 
-        data_list = self.lslhandler.get_available_data_as_chunk(self.stream)
+        data_list = self.lslhandler.get_available_data_as_chunk(self.stream, max_samples)
         if data_list: # an empty list evaluates to False
             for data in data_list:
                 data_dict = {}
@@ -71,6 +84,16 @@ class EEGProcessor:
             return list_of_data_dicts
         return None
     
+    def filter_eeg_data(self, data, filter: Filter) : 
+        # list_without_keys = [[v for v in d[0].values()] for d in data]
+        list_without_keys = data
+        filtered_data = mne.filter.filter_data(np.array(list_without_keys).T, self.sampling_frequency, l_freq=filter[0], h_freq=filter[1], verbose=False)
+        # for i, d in enumerate(data):
+        #     for j, key in enumerate(d[0]):
+        #         d[0][key] = filtered_data[j][i]
+        
+        return filtered_data.T
+
     def return_topoplot_matplotlib_figure(self):
         channel_names = []
         N_SAMPLES = 500

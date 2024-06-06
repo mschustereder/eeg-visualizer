@@ -76,11 +76,11 @@ class LslHandler:
                 pass
         return data_sample #if the queue was empty it returns None
     
-    def get_available_data_as_chunk(self, stream : StreamInfo):
+    def get_available_data_as_chunk(self, stream : StreamInfo, max_samples = 1024):
         chunk_to_return = []
         queue_struct = self.active_streams[stream][1]
         with queue_struct.data_queue_lock: 
-            while not queue_struct.data_queue.empty(): 
+            while not queue_struct.data_queue.empty() and len(chunk_to_return) < max_samples: 
                 chunk_to_return.append(queue_struct.data_queue.get(block = False))
                 queue_struct.data_queue.task_done()
             queue_struct.queue_length = 0
