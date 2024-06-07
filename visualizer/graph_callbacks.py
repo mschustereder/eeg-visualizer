@@ -71,68 +71,6 @@ def topoPlot():
 
     return go.Figure(data=go.Scatter(x=gl.main_graph_frame.timestamps, y=gl.main_graph_frame.eeg_values["Fz"], mode='lines', line_color="Blue", line_width=0.5) , layout_xaxis_range=get_x_time_range())#, layout_yaxis_range=[-5400, -4900])
 
-# def spectrumPlot():
-#     start = time.time()
-#     data = gl.eeg_processor.get_eeg_data_as_chunk()
-
-#     if data == None:
-#         return no_update
-    
-#     for sample in data:
-#         gl.main_graph_frame.fft_values_buffer.append(mean(list(sample[0].values())))
-
-#     #only update graph if accumulated data is FFT_SAMPLES samples long
-#     if len(gl.main_graph_frame.fft_values_buffer) >= gl.FFT_SAMPLES:
-
-#         #we want to get a spectrum every 100ms, so we will calulate overlapping fft windows, and thus use the fft_values_buffer as a FIFO buffer
-#         gl.main_graph_frame.fft_values_buffer = gl.main_graph_frame.fft_values_buffer[-gl.FFT_SAMPLES:] 
-#         sampling_rate = gl.eeg_processor.stream.nominal_srate()
-#         sample_time = data[-1][1] - data[0][1] #this is the time that has passed in the sample world
-#         frequency, fft_magnitude_normalized = calculate_fft(gl.main_graph_frame.fft_values_buffer, sampling_rate)
-
-#         #we dont want the offset a 0 Hz included, so we will cut off every frequency below 1 Hz
-#         cut_index = 0
-#         while(frequency[cut_index] < 1):
-#             cut_index += 1
-
-#         #we can also cut anything above FREQUENCY_CUT_OFF
-            
-#         cut_index_top = 0
-#         while(frequency[cut_index_top] < gl.FREQUENCY_CUT_OFF):
-#             cut_index_top += 1
-
-#         gl.main_graph_frame.frequencies = frequency[cut_index:cut_index_top]
-#         gl.main_graph_frame.fft_vizualizer_values.append(fft_magnitude_normalized[cut_index:cut_index_top])
-
-#         #we are using relative times from the first sample to the last sample in the fft_visualizer_values
-#         if len(gl.main_graph_frame.fft_timestamps)==0:
-#             gl.main_graph_frame.fft_timestamps.append(sample_time)
-#         else:
-#             gl.main_graph_frame.fft_timestamps.append(gl.main_graph_frame.fft_timestamps[-1] + sample_time)
-
-        
-#         #only show the last SAMPLES_SHOWN_IN_SPECTROGRAM samples
-#         if len(gl.main_graph_frame.fft_vizualizer_values) > gl.SAMPLES_SHOWN_IN_SPECTROGRAM:
-#             gl.main_graph_frame.fft_vizualizer_values = gl.main_graph_frame.fft_vizualizer_values[-gl.SAMPLES_SHOWN_IN_SPECTROGRAM:]
-#             gl.main_graph_frame.fft_timestamps = gl.main_graph_frame.fft_timestamps[-gl.SAMPLES_SHOWN_IN_SPECTROGRAM:]
-#         fig = go.Figure(data=go.Surface(z=gl.main_graph_frame.fft_vizualizer_values[::2], x = gl.main_graph_frame.frequencies, y = gl.main_graph_frame.fft_timestamps[::2]))
-#         fig.update_layout(
-#             scene=dict(
-#                 xaxis = dict(range=gl.FREQUENCY_MIN_MAX_BOUND, showgrid=True, title="Frequency", showbackground=True, backgroundcolor="rgba(0, 0, 0,0)"),
-#                 yaxis = dict(title="", showgrid=False, showbackground=True, backgroundcolor="rgba(0, 0, 0,0)",showticklabels=False),
-#                 zaxis = dict(showgrid=True, title="", showticklabels=False),
-#                 aspectmode = "manual",
-#                 aspectratio = dict(x=7, y=4, z=1)),
-
-#             scene_camera = dict(
-#                 eye=dict(x=-0.2, y=4.5, z=0.5)),
-            
-#             )
-        
-#         return fig
-#     print(len(gl.main_graph_frame.fft_values_buffer))
-#     return no_update
-
 
 def get_figure_scatter():
     traces = []
@@ -173,7 +111,7 @@ def spectrumPlot(type):
         #we can also cut anything above FREQUENCY_CUT_OFF
             
         cut_index_top = 0
-        while(frequency[cut_index_top] < gl.FREQUENCY_CUT_OFF):
+        while(frequency[cut_index_top] < gl.FREQUENCY_MAX):
             cut_index_top += 1
 
         gl.main_graph_frame.frequencies = frequency[cut_index:cut_index_top]
