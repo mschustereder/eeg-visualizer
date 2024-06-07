@@ -11,17 +11,13 @@ from PySide6 import QtCore
 
 if __name__ == "__main__":
     streams = gl.lsl_handler.get_all_lsl_streams()
-    gl.lsl_handler.connect_to_specific_lsl_stream(streams[0])
-    gl.lsl_handler.start_data_recording_thread(streams[0])
-    gl.eeg_processor = EEGProcessor(gl.lsl_handler, streams[0])
+    print([stream.name() for stream in streams])
+    for stream in streams:
+        gl.lsl_handler.connect_to_specific_lsl_stream(stream)
+        gl.lsl_handler.start_data_recording_thread(stream)
 
-    gl.lsl_handler.connect_to_specific_lsl_stream(streams[1])
-    gl.lsl_handler.start_data_recording_thread(streams[1])
-
-    gl.lsl_handler.connect_to_specific_lsl_stream(streams[2])
-    gl.lsl_handler.start_data_recording_thread(streams[2])
-
-    gl.hr_processor = HRProcessor(gl.lsl_handler, streams[1], streams[2])
+    gl.eeg_processor = EEGProcessor(gl.lsl_handler, gl.lsl_handler.get_stream_by_name("BrainVision RDA"))
+    gl.hr_processor = HRProcessor(gl.lsl_handler, gl.lsl_handler.get_stream_by_name("HR_Polar H10 CA549123"), gl.lsl_handler.get_stream_by_name("RR_Polar H10 CA549123"))
 
     app = QApplication(sys.argv)
     window = QMainWindow()

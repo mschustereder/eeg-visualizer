@@ -21,11 +21,13 @@ class VisualizerHR(pg.PlotWidget):
         self.showGrid(x = True, y = True)
         self.setBackground((255, 255, 255))
         self.line_plot = self.plot(np.zeros(10), np.zeros(10), pen = pg.mkPen(color = (0, 0, 255)))
+        self.hideButtons()
+        self.setMouseEnabled(False, False)
         self.data = HRGraphFrame()
         self.graph_start_time = time.time()
-        self.bio_variable = HR_BIO_VARIABLE.BPM
-        self.max = None
-        self.below_max_count = 0
+        self.set_bio_variable(HR_BIO_VARIABLE.BPM)
+        #time axis label
+        self.setLabel('bottom', 'Time', units ='s')
 
 
     def cut_hr_buffer(self):
@@ -52,6 +54,20 @@ class VisualizerHR(pg.PlotWidget):
         self.data = HRGraphFrame()
         self.max = None
         self.below_max_count = 0
+
+        #set y label accordingly
+        match self.bio_variable:
+
+            case HR_BIO_VARIABLE.BPM:
+                self.setLabel('left', 'BPM', units ='1')
+            case HR_BIO_VARIABLE.RMSSD:
+                self.setLabel('left', 'RMSSD', units ='1')
+            case HR_BIO_VARIABLE.SDNN:
+                self.setLabel('left', 'SDNN', units ='1')
+            case HR_BIO_VARIABLE.POI_RAT:
+                self.setLabel('left', 'Poincare ratio', units ='1')
+            case _:
+                raise ValueError("invalid bio variable")
 
     def get_y_range(self):
         curr_max = np.amax(self.data.graph_values)
