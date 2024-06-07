@@ -125,9 +125,9 @@ def spectrumPlot(type):
 
         
         #only show the last SAMPLES_SHOWN_IN_SPECTROGRAM samples
-        if len(gl.main_graph_frame.fft_vizualizer_values) > gl.DEFAULT_SAMPLES_SHOWN_IN_SPECTROGRAM:
-            gl.main_graph_frame.fft_vizualizer_values = gl.main_graph_frame.fft_vizualizer_values[-gl.DEFAULT_SAMPLES_SHOWN_IN_SPECTROGRAM:]
-            gl.main_graph_frame.fft_timestamps = gl.main_graph_frame.fft_timestamps[-gl.DEFAULT_SAMPLES_SHOWN_IN_SPECTROGRAM:]
+        if len(gl.main_graph_frame.fft_vizualizer_values) > gl.DEFAULT_SECONDS_SHOWN_IN_SPECTROGRAM:
+            gl.main_graph_frame.fft_vizualizer_values = gl.main_graph_frame.fft_vizualizer_values[-gl.DEFAULT_SECONDS_SHOWN_IN_SPECTROGRAM:]
+            gl.main_graph_frame.fft_timestamps = gl.main_graph_frame.fft_timestamps[-gl.DEFAULT_SECONDS_SHOWN_IN_SPECTROGRAM:]
 
         if (type == 0):
             fig = get_figure_scatter()

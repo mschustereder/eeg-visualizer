@@ -5,8 +5,8 @@ from  lslHandler.lslHandler import LslHandler
 #CONSTANTS
 
 # with how manny samples should the fft be calculated (has to be power of 2)
-DEFAULT_FFT_SAMPLES = 512
-DEFAULT_SAMPLES_SHOWN_IN_SPECTROGRAM = 100
+DEFAULT_FFT_SAMPLES = 1024
+DEFAULT_SECONDS_SHOWN_IN_SPECTROGRAM = 5
 FREQUENCY_MAX = 40
 FREQUENCY_MIN = 1
 SPECTRUM_GRAPH_GRADIENT_BOTTOM_COLOR = [65, 23, 105]
