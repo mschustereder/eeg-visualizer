@@ -95,10 +95,10 @@ def spectrumPlot(type):
         gl.main_graph_frame.fft_values_buffer.append(mean(list(sample[0].values())))
 
     #only update graph if accumulated data is FFT_SAMPLES samples long
-    if len(gl.main_graph_frame.fft_values_buffer) >= gl.FFT_SAMPLES:
+    if len(gl.main_graph_frame.fft_values_buffer) >= gl.DEFAULT_FFT_SAMPLES:
 
         #we want to get a spectrum every 100ms, so we will calulate overlapping fft windows, and thus use the fft_values_buffer as a FIFO buffer
-        gl.main_graph_frame.fft_values_buffer = gl.main_graph_frame.fft_values_buffer[-gl.FFT_SAMPLES:] 
+        gl.main_graph_frame.fft_values_buffer = gl.main_graph_frame.fft_values_buffer[-gl.DEFAULT_FFT_SAMPLES:] 
         sampling_rate = gl.eeg_processor.stream.nominal_srate()
         sample_time = data[-1][1] - data[0][1] #this is the time that has passed in the sample world
         frequency, fft_magnitude_normalized = calculate_fft(gl.main_graph_frame.fft_values_buffer, sampling_rate)
@@ -125,9 +125,9 @@ def spectrumPlot(type):
 
         
         #only show the last SAMPLES_SHOWN_IN_SPECTROGRAM samples
-        if len(gl.main_graph_frame.fft_vizualizer_values) > gl.SAMPLES_SHOWN_IN_SPECTROGRAM:
-            gl.main_graph_frame.fft_vizualizer_values = gl.main_graph_frame.fft_vizualizer_values[-gl.SAMPLES_SHOWN_IN_SPECTROGRAM:]
-            gl.main_graph_frame.fft_timestamps = gl.main_graph_frame.fft_timestamps[-gl.SAMPLES_SHOWN_IN_SPECTROGRAM:]
+        if len(gl.main_graph_frame.fft_vizualizer_values) > gl.DEFAULT_SAMPLES_SHOWN_IN_SPECTROGRAM:
+            gl.main_graph_frame.fft_vizualizer_values = gl.main_graph_frame.fft_vizualizer_values[-gl.DEFAULT_SAMPLES_SHOWN_IN_SPECTROGRAM:]
+            gl.main_graph_frame.fft_timestamps = gl.main_graph_frame.fft_timestamps[-gl.DEFAULT_SAMPLES_SHOWN_IN_SPECTROGRAM:]
 
         if (type == 0):
             fig = get_figure_scatter()

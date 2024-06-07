@@ -42,25 +42,18 @@ class Visualizer3D(gl.GLViewWidget):
         self.addItem(self.grid_item)
         self.plot_item = gl.GLSurfacePlotItem(np.zeros(10), np.zeros(10), np.zeros((10, 10)))
         self.addItem(self.plot_item)
-        self.setCameraPosition(elevation=5, azimuth=-1, distance=85)
-        self.scale_factor_x = 1
-        self.scale_factor_y = 1
-        self.scale_factor_z = 1
-        self.max = 0
-        self.below_max_count = 0
-        self.data = EEGGraphFrame()
-        # self.freq_ticks = AxeTicks(self, "Frequency")
-        # self.freq_ticks.set_label_pos(0, 0, 0)
+        self.initialize(g.DEFAULT_FFT_SAMPLES, g.DEFAULT_SAMPLES_SHOWN_IN_SPECTROGRAM)
+        self.setCameraPosition(pos=QtGui.QVector3D(0, 0, 5), distance=33, elevation=7, azimuth=0)
 
         # we want that the spectrum is always good visible, x and y can be scaled at the beginning, since the paramters don´t change during execution
         frequency_range = g.FREQUENCY_MAX - g.FREQUENCY_MIN
-        scale_y = self.y_range/frequency_range
-        if scale_y != 1:
-            self.scale_factor_y = self.scale_factor_y*scale_y
-            self.plot_item.scale(1, scale_y, 1)
+        # scale_y = self.y_range/frequency_range
+        # if scale_y != 1:
+        #     self.scale_factor_y = self.scale_factor_y*scale_y
+        #     self.plot_item.scale(1, scale_y, 1)
 
         #theoretically we always show g.EEG_GRAPH_INTERVAL_MS*0.001* g.SAMPLES_SHOWN_IN_SPECTROGRAM seconds so we will use this to scale the graph
-        shown_x = g.EEG_GRAPH_INTERVAL_MS*0.001* g.SAMPLES_SHOWN_IN_SPECTROGRAM
+        shown_x = g.EEG_GRAPH_INTERVAL_MS*0.001*self.samples_shown
         scale_x = self.x_range/shown_x
         if scale_x != 1:
             self.scale_factor_x = self.scale_factor_x*scale_x
@@ -68,6 +61,16 @@ class Visualizer3D(gl.GLViewWidget):
         
         self.plot_item.translate(0, (-frequency_range/2 - g.FREQUENCY_MIN)*self.scale_factor_y, 0)
 
+
+    def initialize(self, fft_buffer_len, samples_shown):
+        self.scale_factor_x = 1
+        self.scale_factor_y = 1
+        self.scale_factor_z = 1
+        self.max = 0
+        self.below_max_count = 0
+        self.data = EEGGraphFrame()
+        self.fft_buffer_len = fft_buffer_len
+        self.samples_shown = samples_shown
 
     #disable all interaction mechanisms by overriding the corresponding functions
         
@@ -88,6 +91,15 @@ class Visualizer3D(gl.GLViewWidget):
 
     def mouseMoveEvent(self, ev):
         pass
+
+
+    def set_fft_buffer_len(self, len):
+        assert len%2==0
+        self.initialize(len, self.samples_shown)
+
+    def set_samples_shown(self, samples_shown):
+        assert len%2==0
+        self.initialize(self.fft_buffer_len, samples_shown)
 
     def __get_colors(self, values, max_val):
         colors=[]
@@ -144,20 +156,14 @@ class Visualizer3D(gl.GLViewWidget):
             self.data.frequencies = frequency[cut_index:cut_index_top]
             self.data.fft_vizualizer_values.append(fft_magnitude_normalized[cut_index:cut_index_top])
 
-            #we are using relative times from the first sample to the last sample in the fft_visualizer_values
-            if len(self.data.fft_timestamps)==0:
-                self.data.fft_timestamps.append(sample_time)
-            else:
-                self.data.fft_timestamps.append(self.data.fft_timestamps[-1] + sample_time)
-
+            #we want to the past to go into -x direction, so we will set the new value as time 0
+            self.data.fft_timestamps = [timestamp-sample_time for timestamp in self.data.fft_timestamps]
+            self.data.fft_timestamps.append(0)
 
             #only show the last SAMPLES_SHOWN_IN_SPECTROGRAM samples
-            if len(self.data.fft_vizualizer_values) > g.SAMPLES_SHOWN_IN_SPECTROGRAM:
-                self.data.fft_vizualizer_values = self.data.fft_vizualizer_values[-g.SAMPLES_SHOWN_IN_SPECTROGRAM:]
-                self.data.fft_timestamps = self.data.fft_timestamps[-g.SAMPLES_SHOWN_IN_SPECTROGRAM:]
-                shift_back_time = self.data.fft_timestamps[0]
-                #keep Graph in place, or else it will move inside the widged with time
-                self.data.fft_timestamps = [timestamp-shift_back_time for timestamp in self.data.fft_timestamps]
+            if len(self.data.fft_vizualizer_values) > self.samples_shown:
+                self.data.fft_vizualizer_values = self.data.fft_vizualizer_values[-self.samples_shown:]
+                self.data.fft_timestamps = self.data.fft_timestamps[-self.samples_shown:]
 
 
     def update_spectrum(self):
@@ -170,10 +176,10 @@ class Visualizer3D(gl.GLViewWidget):
             self.data.fft_values_buffer.append(mean(list(sample[0].values())))
 
         #only update graph if accumulated data is FFT_SAMPLES samples long
-        if len(self.data.fft_values_buffer) >= g.FFT_SAMPLES:
+        if len(self.data.fft_values_buffer) >= self.fft_buffer_len:
 
             #we want to get a spectrum every 100ms, so we will calulate overlapping fft windows, and thus use the fft_values_buffer as a FIFO buffer
-            self.data.fft_values_buffer = self.data.fft_values_buffer[-g.FFT_SAMPLES:] 
+            self.data.fft_values_buffer = self.data.fft_values_buffer[-self.fft_buffer_len:] 
             sampling_rate = g.eeg_processor.stream.nominal_srate()
             sample_time = data[-1][1] - data[0][1] #this is the time that has passed in the sample world
             frequency, fft_magnitude_normalized = fft.calculate_fft(self.data.fft_values_buffer, sampling_rate)
@@ -184,5 +190,4 @@ class Visualizer3D(gl.GLViewWidget):
             z = np.array(self.data.fft_vizualizer_values)
             colors = np.array(self.__get_colors(z, self.max))
             self.plot_item.setData(x, y, z, colors = colors)
-            
             
