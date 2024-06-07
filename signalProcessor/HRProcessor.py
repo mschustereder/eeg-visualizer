@@ -21,18 +21,14 @@ class HRProcessor:
         self.lslhandler = lslhandler
         self.hr_stream = hr_stream
         self.rr_stream = rr_stream
-        self.bpm_buffer = []
-        self.rmssd_buffer = []
-        self.sdnn_buffer = []
-        self.poincare_buffer = []
-        self.storage_size = storage_size
+
 
     lslhandler : LslHandler
     hr_stream : StreamInfo
     rr_stream : StreamInfo
 
-    def update_bpm(self):
-        self.bpm_buffer.append(self.lslhandler.get_data_sample(self.hr_stream))
+    def get_bpm(self):
+        return self.lslhandler.get_data_sample(self.hr_stream)
         
     def _get_rr_intervals(self):
         #(ref)
@@ -48,44 +44,25 @@ class HRProcessor:
             return rr_intervals
         return None
     
-    def update_rmssd(self, rr_intervals):
-        time_feats = get_time_domain_features(nn_intervals=rr_intervals)
-        self.rmssd_buffer.append(time_feats['rmssd'])
+    def get_rmssd(self, rr_intervals):
+       if not rr_intervals: return None
+       time_feats = get_time_domain_features(nn_intervals=rr_intervals)
+       return time_feats['rmssd']
 
-    def update_sdnn(self, rr_intervals):
+    def get_sdnn(self, rr_intervals):
+        if not rr_intervals: return None
         time_feats = get_time_domain_features(nn_intervals=rr_intervals)
-        self.sdnn_buffer.append(time_feats['sdnn'])
+        return time_feats['sdnn']
     
-    def update_poincare(self, rr_intervals):
+    def get_poincare(self, rr_intervals):
+        if not rr_intervals: return None
         poincare_feats = get_poincare_plot_features(nn_intervals=rr_intervals)
-        self.poincare_buffer.append(poincare_feats['ratio_sd2_sd1'])
+        return poincare_feats['ratio_sd2_sd1']
 
-    def check_buffer_sizes(self):
-        if len(self.bpm_buffer) >= self.storage_size:
-            self.bpm_buffer = self.bpm_buffer[1:]
-            self.poincare_buffer = self.poincare_buffer[1:]
-            self.sdnn_buffer = self.sdnn_buffer[1:]
-            self.rmssd_buffer = self.rmssd_buffer[1:]
     
-    def update_all_and_get_data_array(self, bio_var: HR_BIO_VARIABLE):
-        self.check_buffer_sizes()
-        self.update_bpm()
+    def get_all_bio_vars(self):
         rr_intervals = self._get_rr_intervals()
-        if rr_intervals != None:
-            self.update_poincare(rr_intervals)
-            self.update_rmssd(rr_intervals)
-            self.update_sdnn(rr_intervals)
-
-        if bio_var == HR_BIO_VARIABLE.BPM:
-            return self.bpm_buffer
-        elif bio_var == HR_BIO_VARIABLE.POI_RAT:
-            return self.poincare_buffer
-        elif bio_var == HR_BIO_VARIABLE.RMSSD:
-            return self.rmssd_buffer
-        elif bio_var == HR_BIO_VARIABLE.SDNN:
-            return self.sdnn_buffer
-        else:
-            assert False
+        return self.get_bpm(), self.get_rmssd(rr_intervals), self.get_sdnn(rr_intervals), self.get_poincare(rr_intervals)
 
 
     
