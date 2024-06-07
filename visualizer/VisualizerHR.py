@@ -56,17 +56,15 @@ class VisualizerHR(pg.PlotWidget):
         self.below_max_count = 0
 
         #set y label accordingly
-        match self.bio_variable:
-
-            case HR_BIO_VARIABLE.BPM:
+        if self.bio_variable == HR_BIO_VARIABLE.BPM:
                 self.setLabel('left', 'BPM', units ='1')
-            case HR_BIO_VARIABLE.RMSSD:
+        elif self.bio_variable == HR_BIO_VARIABLE.RMSSD:
                 self.setLabel('left', 'RMSSD', units ='1')
-            case HR_BIO_VARIABLE.SDNN:
+        elif self.bio_variable == HR_BIO_VARIABLE.SDNN:
                 self.setLabel('left', 'SDNN', units ='1')
-            case HR_BIO_VARIABLE.POI_RAT:
+        elif self.bio_variable == HR_BIO_VARIABLE.POI_RAT:
                 self.setLabel('left', 'Poincare ratio', units ='1')
-            case _:
+        else:
                 raise ValueError("invalid bio variable")
 
     def get_y_range(self):
@@ -92,25 +90,23 @@ class VisualizerHR(pg.PlotWidget):
         data = None
         sample = None
 
-        match self.bio_variable:
-
-            case HR_BIO_VARIABLE.BPM:
+        if self.bio_variable == HR_BIO_VARIABLE.BPM:
                 data = g.hr_processor.get_bpm_data() # tupple ([sample], timestamp)
                 if data is not None:
                     sample = data[0]
-            case HR_BIO_VARIABLE.RMSSD:
+        elif self.bio_variable == HR_BIO_VARIABLE.RMSSD:
                 data = g.hr_processor.get_rmssd_data() #float val
                 if data is not None and not np.isnan(data):
                     sample = [data]
-            case HR_BIO_VARIABLE.SDNN:
+        elif self.bio_variable == HR_BIO_VARIABLE.SDNN:
                 data =  g.hr_processor.get_sdnn_data() #float val
                 if data is not None and not np.isnan(data):
                     sample = [data]
-            case HR_BIO_VARIABLE.POI_RAT:
+        elif self.bio_variable == HR_BIO_VARIABLE.POI_RAT:
                 data =  g.hr_processor.get_poincare_ratio() #float val
                 if data is not None and not np.isnan(data):
                     sample = [data]
-            case _:
+        else:
                 raise ValueError("invalid bio variable")
 
 

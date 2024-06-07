@@ -4,7 +4,7 @@ from hrvanalysis import get_time_domain_features, get_poincare_plot_features
 from hrvanalysis.preprocessing import interpolate_nan_values, remove_ectopic_beats
 import numpy as np
 from collections import deque
-from ..visualizer.VisualizerHR import HR_BIO_VARIABLE
+from visualizer.VisualizerHR import HR_BIO_VARIABLE
 
 #Code with (ref) taken from https://github.com/abcsds/hrv/blob/main/src/09b_plot_hrv.py - Author: Luis Alberto Barradas Chacón
 

@@ -3,9 +3,10 @@ from visualizer.eeg_visualizer import *
 from signalProcessor.EEGProcessor import EEGProcessor
 from signalProcessor.HRProcessor import HRProcessor
 import sys
-from PySide6.QtWidgets import QApplication, QMainWindow
+from PySide6.QtWidgets import QApplication, QMainWindow, QWidget
 from visualizer.Visualizer3D import Visualizer3D
 from visualizer.VisualizerHR import VisualizerHR
+from visualizer.VisualizerTopoPlot import VisualizerTopoPlot
 from PySide6 import QtCore
 
 
@@ -17,7 +18,7 @@ if __name__ == "__main__":
         gl.lsl_handler.start_data_recording_thread(stream)
 
     gl.eeg_processor = EEGProcessor(gl.lsl_handler, gl.lsl_handler.get_stream_by_name("BrainVision RDA"))
-    gl.hr_processor = HRProcessor(gl.lsl_handler, gl.lsl_handler.get_stream_by_name("HR_Polar H10 CA549123"), gl.lsl_handler.get_stream_by_name("RR_Polar H10 CA549123"))
+    gl.hr_processor = HRProcessor(gl.lsl_handler, gl.lsl_handler.get_stream_by_name("HR_Polar H10 CA549123"), gl.lsl_handler.get_stream_by_name("RR_Polar H10 CA549123"), gl.MAX_HR_DATA_SAMPLES)
 
     app = QApplication(sys.argv)
     window = QMainWindow()
@@ -33,5 +34,14 @@ if __name__ == "__main__":
     window.show()
     window2.setCentralWidget(vis2)
     window2.show()
+
+    window3 = QMainWindow()
+    central_widget = QWidget()
+    vis_topo = VisualizerTopoPlot(central_widget)
+    window3.setCentralWidget(vis_topo)
+    window3.show()
+
+
+
 
     sys.exit(app.exec())
