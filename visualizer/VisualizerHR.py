@@ -20,7 +20,7 @@ class VisualizerHR(pg.PlotWidget):
         super().__init__(parent, background, plotItem, **kargs)
         self.showGrid(x = True, y = True)
         self.setBackground((255, 255, 255))
-        self.line_plot = self.plot(np.zeros(10), np.zeros(10), pen = pg.mkPen(color = (0, 0, 255)))
+        self.line_plot = self.plot(np.zeros(10), np.zeros(10), pen = pg.mkPen(color = (0, 0, 255), width = 2))
         self.hideButtons()
         self.setMouseEnabled(False, False)
         self.data = HRGraphFrame()
@@ -71,7 +71,6 @@ class VisualizerHR(pg.PlotWidget):
 
     def get_y_range(self):
         curr_max = np.amax(self.data.graph_values)
-        
         if (self.max is None or curr_max > self.max):
             self.max = curr_max*1.2
             self.below_max_count = 0
@@ -101,15 +100,15 @@ class VisualizerHR(pg.PlotWidget):
                     sample = data[0]
             case HR_BIO_VARIABLE.RMSSD:
                 data = g.hr_processor.get_rmssd_data() #float val
-                if data is not None:
+                if data is not None and not np.isnan(data):
                     sample = [data]
             case HR_BIO_VARIABLE.SDNN:
                 data =  g.hr_processor.get_sdnn_data() #float val
-                if data is not None:
+                if data is not None and not np.isnan(data):
                     sample = [data]
             case HR_BIO_VARIABLE.POI_RAT:
                 data =  g.hr_processor.get_poincare_ratio() #float val
-                if data is not None:
+                if data is not None and not np.isnan(data):
                     sample = [data]
             case _:
                 raise ValueError("invalid bio variable")
@@ -120,7 +119,7 @@ class VisualizerHR(pg.PlotWidget):
             if (len(self.data.graph_values) != 0):
                 sample = [self.data.graph_values[-1]]
             else:
-                sample = [0]
+                return
         
         timestamp = time.time() - self.graph_start_time
 
