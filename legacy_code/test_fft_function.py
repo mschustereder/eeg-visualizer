@@ -1,5 +1,5 @@
 import matplotlib.pyplot as plt
-from graph_callbacks import *
+from legacy_code.graph_callbacks import *
 
 def get_sine(time_vector, frequency, amplitude):
     return amplitude * np.sin(2.0 * np.pi * frequency * time_vector)

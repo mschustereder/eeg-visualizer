@@ -142,4 +142,4 @@ def show_brainwave_selection(value):
                 ]
     return brainwave_selection if value == 'Topoplot' else []
 
-from visualizer.graph_callbacks import *
+from legacy_code.graph_callbacks import *

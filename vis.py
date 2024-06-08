@@ -1,5 +1,5 @@
 import visualizer.globals as gl
-from visualizer.eeg_visualizer import *
+# from visualizer.eeg_visualizer import *
 from signalProcessor.EEGProcessor import EEGProcessor
 from signalProcessor.HRProcessor import HRProcessor
 import sys

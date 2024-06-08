@@ -8,7 +8,7 @@
 
 ### Steps for Linux:
 - Create Virtual Environment: ```python -m venv venv```
-- Activate Virtual Environment: ```source env/bin/activate```
+- Activate Virtual Environment: ```source venv/bin/activate```
 - Install Requirements: ```pip install -r requirements.txt```
 
 - If new packages are added or updated, do so with pip in the directory of the venv and update requirements.txt: ```pip freeze > requirements.txt```
