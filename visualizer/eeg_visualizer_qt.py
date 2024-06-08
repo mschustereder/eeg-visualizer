@@ -1,4 +1,4 @@
-from PySide6.QtWidgets import QMainWindow, QVBoxLayout, QWidget
+from PySide6.QtWidgets import QMainWindow, QGridLayout, QWidget, QVBoxLayout, QComboBox
 from visualizer.Visualizer3D import Visualizer3D
 from visualizer.VisualizerHR import VisualizerHR
 from PySide6 import QtCore
@@ -28,13 +28,32 @@ def execute_qt_app():
 
     sys.exit(app.exec())
 
-
 class EegVisualizerMainWindow(QMainWindow):
     def __init__(self, timer):
         super().__init__()
 
         self.setWindowTitle("EEG Visualizer Main Window")
 
+        visualizer_3d, visualizer_hr = EegVisualizerMainWindow.setup_timer_and_get_visualizers_3d_and_hr(timer)
+
+        layout = QGridLayout()
+
+        visualizer_3d.setFixedSize(QtCore.QSize(400, 300))
+        visualizer_hr.setFixedSize(QtCore.QSize(400, 300))
+
+        layout.addWidget(visualizer_3d, 0, 0)
+        layout.addWidget(visualizer_hr, 1, 1)
+        parameter_selection_container = EegVisualizerMainWindow.get_parameter_selection()
+        layout.addWidget(parameter_selection_container, 0, 1)
+
+        container_widget = QWidget()
+        container_widget.setLayout(layout)
+
+        self.setCentralWidget(container_widget)
+
+        connect_to_streams()
+
+    def setup_timer_and_get_visualizers_3d_and_hr(timer):
         visualizer_3d = Visualizer3D()
         visualizer_hr = VisualizerHR()
 
@@ -45,17 +64,15 @@ class EegVisualizerMainWindow(QMainWindow):
 
         timer.start()
 
-        layout = QVBoxLayout()
-
-        visualizer_3d.setFixedSize(QtCore.QSize(400, 300))
-        visualizer_hr.setFixedSize(QtCore.QSize(400, 300))
-
-        layout.addWidget(visualizer_3d)
-        layout.addWidget(visualizer_hr)
-
-        container_widget = QWidget()
-        container_widget.setLayout(layout)
-
-        self.setCentralWidget(container_widget)
-
-        connect_to_streams()
+        return visualizer_3d, visualizer_hr
+    
+    def get_parameter_selection():
+        parameter_selection_container = QWidget()
+        vertical_layout = QVBoxLayout()
+        dropdown = QComboBox()
+        dropdown.addItem('Option 1')
+        dropdown.addItem('Option 2')
+        dropdown.addItem('Option 3')
+        vertical_layout.addWidget(dropdown)
+        parameter_selection_container.setLayout(vertical_layout)
+        return parameter_selection_container
