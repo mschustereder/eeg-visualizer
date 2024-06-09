@@ -68,15 +68,18 @@ class YAxis():
         self.axe.setSize(0, 0, 0)
         self.parent.addItem(self.axe)
 
-        self.label = gl.GLTextItem(text = label, color = (0, 0, 0), font = QtGui.QFont("Helvetica", 8))
+        self.label = gl.GLTextItem(text = label, color = (0, 0, 0), font = QtGui.QFont("Helvetica", 12))
         self.label.translate(self.x_label_offset, 0, self.z_label_offset)
         self.parent.addItem(self.label)
+
+    def get_font_size_from_current_pixel_size(self, pixel_size):
+        return max(int(round(-133*pixel_size + 17.32)), 3)
 
     def add_ticks(self, ticks, scaling_factor, zero_pos, grid_len):
         positions = []
         #add ticks on their respective position
         for tick in ticks:
-            tick_item = gl.GLTextItem(color = (0, 0, 0), font = QtGui.QFont("Helvetica", 8))
+            tick_item = gl.GLTextItem(color = (0, 0, 0), font = QtGui.QFont("Helvetica", 12))
             tick_item.setData(text = str(tick))
             tick_item.translate(self.x_tick_offset, (tick+zero_pos)*scaling_factor, self.z_tick_offset)
             self.parent.addItem(tick_item)
@@ -91,6 +94,12 @@ class YAxis():
         self.axe.translate(0, (zero_pos+min)*scaling_factor, 0)
         self.axe.add_grid_lines(positions)
         self.label.translate(0, range/2*scaling_factor*0.5, 0)
+
+
+    def set_fontsizes_from_pixel_size(self, pixel_size):
+        self.label.setData(font =  QtGui.QFont("Helvetica", self.get_font_size_from_current_pixel_size(pixel_size)))
+        for tick in self.ticks_items:
+            tick[0].setData(font =  QtGui.QFont("Helvetica", self.get_font_size_from_current_pixel_size(pixel_size)))
 
 
 class Visualizer3D(gl.GLViewWidget):
@@ -113,6 +122,8 @@ class Visualizer3D(gl.GLViewWidget):
         self.scale_factor_x = 1
         self.scale_factor_y = 1
         self.scale_factor_z = 1
+
+        self.resized.connect(self.on_resized)
 
         # we want that the spectrum is always good visible, x and y can be scaled at the beginning, since the paramters don´t change during execution
         frequency_range = g.FREQUENCY_MAX - g.FREQUENCY_MIN
@@ -273,3 +284,6 @@ class Visualizer3D(gl.GLViewWidget):
             z = np.array(self.data.fft_vizualizer_values)
             colors = np.array(self.__get_colors(z, self.max))
             self.plot_item.setData(x, y, z, colors = colors)
+
+    def on_resized(self, evt=None):
+        self.frequency_ticks.set_fontsizes_from_pixel_size(self.pixelSize(QtGui.QVector3D(0, 0, 0)))
