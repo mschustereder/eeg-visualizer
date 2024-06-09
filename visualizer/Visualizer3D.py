@@ -73,7 +73,10 @@ class YAxis():
         self.parent.addItem(self.label)
 
     def get_font_size_from_current_pixel_size(self, pixel_size):
-        return max(int(round(-133*pixel_size + 17.32)), 3)
+        #linear function that turns pixel size relative to coordinate size into font size, the parameters k and d are gotten through experimentation
+        k = -133
+        d = 17.32
+        return max(int(round(k*pixel_size + d)), 3)
 
     def add_ticks(self, ticks, scaling_factor, zero_pos, grid_len):
         positions = []
