@@ -1,4 +1,5 @@
 import pyqtgraph.opengl as gl
+from OpenGL.GL import *
 from PySide6 import QtGui
 import numpy as np
 from signalProcessor import fft
@@ -7,21 +8,89 @@ from statistics import mean
 from visualizer.EEGGraphFrame import EEGGraphFrame
 import time
 
-# class AxeTicks():
-#     def __init__(self, parent : gl.GLViewWidget, label):
-#         super().__init__()
-#         self.frequency_label = gl.GLTextItem()
-#         self.frequency_label.setData(text = label, color = (0, 0, 0))
-#         self.parent = parent
-#         parent.addItem(self.frequency_label)
-#         self.frequency_label.scale()
 
-#     def set_label_pos(self, x, y, z):
-#         self.frequency_label.setData(pos = (x, y, z))
+class CustomAxis(gl.GLAxisItem):
 
-#     def add_ticks(self, ticks):
-#         pass
+    def __init__(self, size=None, antialias=True, glOptions='translucent', parentItem=None, color=(0,0,0)):
+        super().__init__(size, antialias, glOptions, parentItem)
+        self.color = color
+        self.grid_positions = []
 
+    def add_grid_lines(self, positions):
+        self.grid_positions.extend(positions)
+
+    # reimplement paint method to change color (took original implementation and only changed colors)
+    def paint(self):
+        self.setupGLState()
+        
+        if self.antialias:
+            glEnable(GL_LINE_SMOOTH)
+            glHint(GL_LINE_SMOOTH_HINT, GL_NICEST)
+            
+        glBegin(GL_LINES)
+        
+        x,y,z = self.size()
+
+        if len(self.color) ==4:
+            glColor4f(self.color[0], self.color[1], self.color[2], self.color[3])
+        else:
+            glColor4f(self.color[0], self.color[1], self.color[2], 1)
+
+        glVertex3f(0, 0, 0)
+        glVertex3f(0, 0, z)
+
+        glVertex3f(0, 0, 0)
+        glVertex3f(0, y, 0)
+
+        glVertex3f(0, 0, 0)
+        glVertex3f(x, 0, 0)
+
+        #draw gridlines
+        for pos in self.grid_positions:
+            glVertex3f(pos[0][0], pos[0][1], pos[0][2])
+            glVertex3f(pos[1][0], pos[1][1], pos[1][2])
+
+        glEnd()
+
+
+class YAxis():
+
+    def __init__(self, parent : gl.GLViewWidget, label) -> None:
+        self.ticks_items = []
+        self.parent = parent
+        self.x_tick_offset = 1.5
+        self.z_tick_offset = -1
+
+        self.x_label_offset = 5
+        self.z_label_offset = -1.5
+
+        self.axe = CustomAxis()
+        self.axe.setSize(0, 0, 0)
+        self.parent.addItem(self.axe)
+
+        self.label = gl.GLTextItem(text = label, color = (0, 0, 0), font = QtGui.QFont("Helvetica", 8))
+        self.label.translate(self.x_label_offset, 0, self.z_label_offset)
+        self.parent.addItem(self.label)
+
+    def add_ticks(self, ticks, scaling_factor, zero_pos, grid_len):
+        positions = []
+        #add ticks on their respective position
+        for tick in ticks:
+            tick_item = gl.GLTextItem(color = (0, 0, 0), font = QtGui.QFont("Helvetica", 8))
+            tick_item.setData(text = str(tick))
+            tick_item.translate(self.x_tick_offset, (tick+zero_pos)*scaling_factor, self.z_tick_offset)
+            self.parent.addItem(tick_item)
+            self.ticks_items.append((tick_item, tick))
+            positions.append(((0, tick*scaling_factor, 0), (grid_len, tick*scaling_factor, 0)))
+
+        #make axe fitting to size of ticks
+        max = np.amax(np.array(self.ticks_items)[:, 1:])
+        min = np.amin(np.array(self.ticks_items)[:, 1:])
+        range = max-min
+        self.axe.setSize(0, range*scaling_factor, 0)
+        self.axe.translate(0, (zero_pos+min)*scaling_factor, 0)
+        self.axe.add_grid_lines(positions)
+        self.label.translate(0, range/2*scaling_factor*0.5, 0)
 
 
 class Visualizer3D(gl.GLViewWidget):
@@ -36,15 +105,11 @@ class Visualizer3D(gl.GLViewWidget):
     def __init__(self):
         super().__init__()     
         self.setBackgroundColor(255, 255, 255)
-        self.grid_item = gl.GLGridItem()
-        self.grid_item.setColor((0, 0, 0, 80))
-        self.grid_item.setSize(self.grid_size, self.grid_size)
-        self.grid_item.setSpacing(self.grid_space, self.grid_space)
-        self.addItem(self.grid_item)
+
         self.plot_item = gl.GLSurfacePlotItem(np.zeros(10), np.zeros(10), np.zeros((10, 10)))
         self.addItem(self.plot_item)
         self.initialize(g.DEFAULT_FFT_SAMPLES, g.DEFAULT_SECONDS_SHOWN_IN_SPECTROGRAM)
-        self.setCameraPosition(pos=QtGui.QVector3D(0, 0, 5), distance=33, elevation=7, azimuth=0)
+        self.setCameraPosition(pos=QtGui.QVector3D(0, 0, 5), distance=40, elevation=7, azimuth=0)
         self.scale_factor_x = 1
         self.scale_factor_y = 1
         self.scale_factor_z = 1
@@ -64,6 +129,9 @@ class Visualizer3D(gl.GLViewWidget):
             self.plot_item.scale(scale_x, 1, 1)
         
         self.plot_item.translate(0, (-frequency_range/2 - g.FREQUENCY_MIN)*self.scale_factor_y, 0)
+
+        self.frequency_ticks = YAxis(self, "Frequency (Hz)")
+        self.frequency_ticks.add_ticks(list(range(0, g.FREQUENCY_MAX+5, 5)), self.scale_factor_y, (-frequency_range/2 - g.FREQUENCY_MIN), -500)
 
 
     def init_frequencies(self):
