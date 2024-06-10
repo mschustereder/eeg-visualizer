@@ -15,6 +15,8 @@ FONT_SIZE_P = 14
 
 HORIZONTAL_ROW_SPACER = 150
 
+DEFAULT_SECONDS_SHOWN = 5
+
 class CardWidget(QFrame):
     def __init__(self, title, title_is_h1=False, text_description=None, content=None):
         super().__init__()
@@ -73,7 +75,7 @@ def execute_qt_app():
     timer = QtCore.QTimer()
     window = EegVisualizerMainWindow(timer)
 
-    window.show()
+    window.showMaximized()
 
     sys.exit(app.exec())
 
@@ -120,6 +122,8 @@ class EegVisualizerMainWindow(QMainWindow):
         self.central_layout.removeWidget(self.central_layout.itemAt(0).widget())
 
         self.visualizer_3d, self.visualizer_hr = EegVisualizerMainWindow.setup_timer_and_get_visualizers_3d_and_hr(self.timer)
+
+        self.visualizer_3d.set_seconds_shown(DEFAULT_SECONDS_SHOWN)
 
         layout = QGridLayout()
 
@@ -178,7 +182,7 @@ class EegVisualizerMainWindow(QMainWindow):
     def get_parameter_selection(self):
         parameter_selection_container = QWidget()
         vertical_layout = QVBoxLayout()
-        main_plot_configuration = EegVisualizerMainWindow.get_main_plot_configuration()
+        main_plot_configuration = self.get_main_plot_configuration()
         sub_plot_configuration = self.get_sub_plot_configuration()
         vertical_layout.addWidget(main_plot_configuration)
         vertical_layout.addWidget(sub_plot_configuration)
@@ -186,7 +190,7 @@ class EegVisualizerMainWindow(QMainWindow):
         parameter_selection_card = CardWidget("Configuration", content=parameter_selection_container)
         return parameter_selection_card
        
-    def get_main_plot_configuration():
+    def get_main_plot_configuration(self):
         form_layout = QFormLayout()
         
         main_plot_dropdown = QComboBox()
@@ -206,11 +210,13 @@ class EegVisualizerMainWindow(QMainWindow):
         
         seconds_shown_input = QLineEdit()
         seconds_shown_input.setValidator(QtGui.QIntValidator())
-        seconds_shown_input.setText("30")
+        seconds_shown_input.setText(f"{DEFAULT_SECONDS_SHOWN}")
         seconds_shown_input.setStyleSheet("margin-top: 10px;")
         seconds_shown_label = QLabel("Seconds Shown:")
         seconds_shown_label.setStyleSheet("border: none;")
         form_layout.addRow(seconds_shown_label, seconds_shown_input)
+
+        seconds_shown_input.editingFinished.connect(self.handle_seconds_shown_change)
 
         form_container = QWidget()
         form_container.setLayout(form_layout)
@@ -246,3 +252,11 @@ class EegVisualizerMainWindow(QMainWindow):
             self.visualizer_hr.set_bio_variable(HR_BIO_VARIABLE.SDNN)
         elif plot_identifier == 'Poin care ratio':
             self.visualizer_hr.set_bio_variable(HR_BIO_VARIABLE.POI_RAT)
+
+    def handle_seconds_shown_change(self):
+        new_value = self.sender().text()
+        try:
+            seconds = int(new_value)
+            self.visualizer_3d.set_seconds_shown(seconds)
+        except ValueError:
+            pass
