@@ -14,9 +14,11 @@ FONT_SIZE_H1 = 20
 FONT_SIZE_H2 = 18
 FONT_SIZE_P = 14
 
-HORIZONTAL_ROW_SPACER = 150
+HORIZONTAL_ROW_SPACER = 200
 
 DEFAULT_SECONDS_SHOWN = 5
+
+DEFAULT_WINDOW_SIZE_EXPONENT = 9
 
 class CardWidget(QFrame):
     def __init__(self, title, title_is_h1=False, text_description=None, content=None):
@@ -291,6 +293,16 @@ class EegVisualizerMainWindow(QMainWindow):
 
         seconds_shown_input.valueChanged.connect(self.handle_seconds_shown_change)
 
+        window_size_exponent_input = QSpinBox()
+        window_size_exponent_input.setRange(1, 15)
+        window_size_exponent_input.setValue(DEFAULT_WINDOW_SIZE_EXPONENT)
+        window_size_exponent_input.setStyleSheet("margin-top: 10px;")
+        window_size_exponent_label = QLabel("Window size exponent:")
+        window_size_exponent_label.setStyleSheet("border: none;")
+        form_layout.addRow(window_size_exponent_label, window_size_exponent_input)
+
+        window_size_exponent_input.valueChanged.connect(self.handle_seconds_shown_change)
+
         form_container = QWidget()
         form_container.setLayout(form_layout)
         
@@ -331,5 +343,15 @@ class EegVisualizerMainWindow(QMainWindow):
         try:
             seconds = int(new_value)
             self.visualizer_3d.set_seconds_shown(seconds)
+        except ValueError:
+            pass
+
+    def handle_window_size_exponent_change(self):
+        new_value = self.sender().text()
+        try:
+            exponent = int(new_value)
+            new_window_size = 2 ** exponent
+
+            # @todo: change window size for spectrogram and topoplot
         except ValueError:
             pass
