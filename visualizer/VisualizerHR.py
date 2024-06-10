@@ -126,5 +126,4 @@ class VisualizerHR(pg.PlotWidget):
         self.setXRange(*self.get_x_time_range())
         self.setYRange(*self.get_y_range())
 
-
         self.line_plot.setData(self.data.timestamps, self.data.graph_values)

@@ -1,12 +1,11 @@
 import visualizer.globals as gl
-# from visualizer.eeg_visualizer import *
+from visualizer.eeg_visualizer_qt import *
 from signalProcessor.EEGProcessor import EEGProcessor
 from signalProcessor.HRProcessor import HRProcessor
 import sys
 from PySide6.QtWidgets import QApplication, QMainWindow
-from visualizer.Visualizer3D import Visualizer3D
+from visualizer.Visualizer3D import Visualizer3D, Visualizer3DColorBar
 from visualizer.VisualizerHR import VisualizerHR
-from PySide6 import QtCore
 
 
 if __name__ == "__main__":
@@ -22,7 +21,10 @@ if __name__ == "__main__":
     app = QApplication(sys.argv)
     window = QMainWindow()
     window2 = QMainWindow()
-    vis = Visualizer3D()
+    window3 = QMainWindow()
+    bar = Visualizer3DColorBar()
+    window3.setCentralWidget(bar)
+    vis = Visualizer3D(bar)
     vis2 = VisualizerHR()
     timer = QtCore.QTimer()
     timer.timeout.connect(vis.update_spectrum)
@@ -33,5 +35,6 @@ if __name__ == "__main__":
     window.show()
     window2.setCentralWidget(vis2)
     window2.show()
+    window3.show()
 
     sys.exit(app.exec())

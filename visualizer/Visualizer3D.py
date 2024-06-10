@@ -1,4 +1,5 @@
 import pyqtgraph.opengl as gl
+import pyqtgraph as pg
 from OpenGL.GL import *
 from PySide6 import QtGui
 import numpy as np
@@ -6,7 +7,7 @@ from signalProcessor import fft
 import visualizer.globals as g
 from statistics import mean
 from visualizer.EEGGraphFrame import EEGGraphFrame
-import time
+from visualizer.Visualizer3DColorBar import Visualizer3DColorBar
 
 
 class CustomAxis(gl.GLAxisItem):
@@ -105,6 +106,8 @@ class YAxis():
             tick[0].setData(font =  QtGui.QFont("Helvetica", self.get_font_size_from_current_pixel_size(pixel_size)))
 
 
+
+
 class Visualizer3D(gl.GLViewWidget):
     grid_size = 200
     grid_space = 5
@@ -114,10 +117,12 @@ class Visualizer3D(gl.GLViewWidget):
     y_range = 40
     z_range = 10
     
-    def __init__(self):
+    def __init__(self, color_bar : Visualizer3DColorBar= None, cm = pg.colormap.get('turbo')):
         super().__init__()     
         self.setBackgroundColor(255, 255, 255)
-
+        self.cm = cm
+        self.color_bar = color_bar
+        self.color_bar.set_color_map(cm)
         self.plot_item = gl.GLSurfacePlotItem(np.zeros(10), np.zeros(10), np.zeros((10, 10)))
         self.addItem(self.plot_item)
         self.initialize(g.DEFAULT_FFT_SAMPLES, g.DEFAULT_SECONDS_SHOWN_IN_SPECTROGRAM)
@@ -208,25 +213,18 @@ class Visualizer3D(gl.GLViewWidget):
 
     def __get_colors(self, values, max_val):
         colors=[]
-        gradient_red_max = g.SPECTRUM_GRAPH_GRADIENT_TOP_COLOR[0]
-        gradient_red_min = g.SPECTRUM_GRAPH_GRADIENT_BOTTOM_COLOR[0]
-        gradient_green_max = g.SPECTRUM_GRAPH_GRADIENT_TOP_COLOR[1]
-        gradient_green_min = g.SPECTRUM_GRAPH_GRADIENT_BOTTOM_COLOR[1]
-        gradient_blue_max = g.SPECTRUM_GRAPH_GRADIENT_TOP_COLOR[2]
-        gradient_blue_min = g.SPECTRUM_GRAPH_GRADIENT_BOTTOM_COLOR[2]
         for row in values:
             color_row = []      
             for value in row:
                 percentage = value/max_val
-                red = gradient_red_min +  percentage * (gradient_red_max-gradient_red_min)
-                green = gradient_green_min + percentage * (gradient_green_max-gradient_green_min)
-                blue = gradient_blue_min + percentage * (gradient_blue_max-gradient_blue_min)
-                color_row.append([red/255, green/255, blue/255])
+                color = self.cm[percentage]
+                color_row.append([color.redF(), color.greenF(), color.blueF()])
             colors.append(color_row)
         return colors
     
     def scale_z(self):
         #scale z axis
+        old_max = self.max
         max_val = np.amax(self.data.fft_vizualizer_values)
 
         if max_val >= self.max:
@@ -240,11 +238,17 @@ class Visualizer3D(gl.GLViewWidget):
             self.max *= g.EEG_GRAPH_Z_UP_SCALE_FACTOR
             print("scale up")
 
+        if old_max == self.max:
+            return
+
         shown_max = self.max*self.scale_factor_z
         scale_z = self.z_range/shown_max
         if scale_z != 1:
             self.scale_factor_z = self.scale_factor_z*scale_z
             self.plot_item.scale(1, 1, scale_z)
+
+        if self.color_bar is not None:
+            self.color_bar.update_values([0, self.max])
 
     def prepare_data_for_plotting(self, fft_magnitude_normalized, sample_time):
             #cut away frequencies we don´t need
