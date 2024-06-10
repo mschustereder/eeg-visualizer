@@ -1,4 +1,4 @@
-from PySide6.QtWidgets import QMainWindow, QGridLayout, QWidget, QVBoxLayout, QComboBox, QSizePolicy, QLabel, QFrame, QFormLayout, QLineEdit, QListWidget, QPushButton, QHBoxLayout
+from PySide6.QtWidgets import QMainWindow, QGridLayout, QWidget, QVBoxLayout, QComboBox, QSizePolicy, QLabel, QFrame, QFormLayout, QLineEdit, QRadioButton, QPushButton, QHBoxLayout
 from PySide6.QtCore import Qt, QSize
 from PySide6 import QtCore, QtGui
 import sys
@@ -8,6 +8,7 @@ from visualizer.VisualizerHR import VisualizerHR, HR_BIO_VARIABLE
 import visualizer.globals as gl
 from signalProcessor.EEGProcessor import EEGProcessor
 from signalProcessor.HRProcessor import HRProcessor
+from enum import Enum
 
 FONT_SIZE_H1 = 20
 FONT_SIZE_H2 = 18
@@ -59,16 +60,6 @@ class CardWidget(QFrame):
             }
         """)
 
-def connect_to_streams():
-    streams = gl.lsl_handler.get_all_lsl_streams()
-    print([stream.name() for stream in streams])
-    for stream in streams:
-        gl.lsl_handler.connect_to_specific_lsl_stream(stream)
-        gl.lsl_handler.start_data_recording_thread(stream)
-
-    gl.eeg_processor = EEGProcessor(gl.lsl_handler, gl.lsl_handler.get_stream_by_name("BrainVision RDA"))
-    gl.hr_processor = HRProcessor(gl.lsl_handler, gl.lsl_handler.get_stream_by_name("HR_Polar H10 CA549123"), gl.lsl_handler.get_stream_by_name("RR_Polar H10 CA549123"))
-
 def execute_qt_app():
     app = QApplication(sys.argv)
 
@@ -80,6 +71,12 @@ def execute_qt_app():
     sys.exit(app.exec())
 
 class EegVisualizerMainWindow(QMainWindow):
+
+    class StreamType(Enum):
+        EEG = 1
+        HR = 2
+        RR = 3
+
     def __init__(self, timer):
         super().__init__()
 
@@ -93,7 +90,38 @@ class EegVisualizerMainWindow(QMainWindow):
 
         self.stream_selection_card = self.get_stream_selection_card()
 
+        self.selected_eeg_stream = None
+        self.selected_hr_stream = None
+        self.selected_rr_stream = None
+
         self.show_stream_selection_view()
+
+    def get_specific_lsl_stream(stream_name):
+        all_lsl_streams = EegVisualizerMainWindow.get_all_lsl_streams()
+        first_match = next((stream for stream in all_lsl_streams if stream.name() == stream_name), None)
+
+        if first_match is None:
+            raise ValueError
+        
+        return first_match
+
+    def connect_to_selected_streams(eeg_stream_name, hr_stream_name, rr_stream_name):
+        stream_names = [eeg_stream_name, hr_stream_name, rr_stream_name]
+        if any(stream_name is None for stream_name in stream_names): return
+
+        streams = [EegVisualizerMainWindow.get_specific_lsl_stream(stream_name) for stream_name in stream_names]
+        if any(stream is None for stream in streams): return
+
+        for stream in streams:
+            gl.lsl_handler.connect_to_specific_lsl_stream(stream)
+            gl.lsl_handler.start_data_recording_thread(stream)
+
+        eeg_stream = streams[0]
+        hr_stream = streams[1]
+        rr_stream = streams[2]
+
+        gl.eeg_processor = EEGProcessor(gl.lsl_handler, gl.lsl_handler.get_stream_by_name(eeg_stream.name()))
+        gl.hr_processor = HRProcessor(gl.lsl_handler, gl.lsl_handler.get_stream_by_name(hr_stream.name()), gl.lsl_handler.get_stream_by_name(rr_stream.name()))
 
     def resizeEvent(self, event):
         if self.stream_selection_card.isVisible():
@@ -112,12 +140,12 @@ class EegVisualizerMainWindow(QMainWindow):
     def adjust_stream_selection_card_size(self):
         window_size = self.size()
         window_width, window_height = window_size.width(), window_size.height()
-        self.stream_selection_card.setFixedSize(window_width * 0.4, window_height * 0.4)
+        self.stream_selection_card.setFixedSize(window_width * 0.4, window_height * 0.8)
         card_width, card_height = self.stream_selection_card.width(), self.stream_selection_card.height()
         self.stream_selection_card.move((window_width - card_width) // 2, (window_height - card_height) // 2)
 
     def show_main_layout(self):
-        connect_to_streams()
+        EegVisualizerMainWindow.connect_to_selected_streams(self.selected_eeg_stream, self.selected_hr_stream, self.selected_rr_stream)
 
         self.central_layout.removeWidget(self.central_layout.itemAt(0).widget())
 
@@ -160,24 +188,69 @@ class EegVisualizerMainWindow(QMainWindow):
 
         return visualizer_3d, visualizer_hr
     
-    def get_stream_selection_card(self):
-        list_widget = QListWidget()
-        list_items = ['Stream 1', 'Stream 2', 'Stream 3']
-        for item in list_items:
-            list_widget.addItem(item)
+    def get_all_lsl_streams():
+        streams = gl.lsl_handler.get_all_lsl_streams()
+        return streams
 
-        start_button = QPushButton("Start")
-        start_button.clicked.connect(self.show_main_layout)
+    def get_stream_selection_for(self, stream_type: StreamType):
+        stream_selection_container = QWidget()
+        stream_selection_layout = QVBoxLayout()
+        selection_title = QLabel(f"Select {stream_type.name} Stream")
+        selection_title.setStyleSheet(f"font-size: {FONT_SIZE_H2}px; font-weight: bold; border: none;")
+
+        stream_selection_layout.addWidget(selection_title)
+
+        lsl_streams = EegVisualizerMainWindow.get_all_lsl_streams()
+
+        callback_function = None
+        if stream_type == EegVisualizerMainWindow.StreamType.EEG:
+            callback_function = self.select_eeg_stream
+        elif stream_type == EegVisualizerMainWindow.StreamType.HR:
+            callback_function = self.select_hr_stream
+        elif stream_type == EegVisualizerMainWindow.StreamType.RR:
+            callback_function = self.select_rr_stream
+        else:
+            raise ValueError
+        
+        for stream in lsl_streams:
+            new_radio_button = QRadioButton(stream.name())
+            stream_selection_layout.addWidget(new_radio_button)
+            new_radio_button.clicked.connect(callback_function)
+
+        stream_selection_container.setLayout(stream_selection_layout)
+
+        return stream_selection_container
+    
+    def get_stream_selection_card(self):
 
         layout = QVBoxLayout()
-        layout.addWidget(list_widget)
+
+        start_button = QPushButton("Use selected streams")
+        start_button.clicked.connect(self.show_main_layout)
+    
+        stream_types = [stream_type for stream_type in EegVisualizerMainWindow.StreamType]
+        for stream_type in stream_types:
+            layout.addWidget(self.get_stream_selection_for(stream_type))
+
         layout.addWidget(start_button)
 
         container = QWidget()
         container.setLayout(layout)
 
-        stream_selection_card = CardWidget("Select LSL Stream", content=container)
+        stream_selection_card = CardWidget("Select LSL Stream", content=container, title_is_h1=True)
         return stream_selection_card
+    
+    def select_eeg_stream(self):
+        sender = self.sender()
+        self.selected_eeg_stream = sender.text()
+
+    def select_hr_stream(self):
+        sender = self.sender()
+        self.selected_hr_stream = sender.text()
+
+    def select_rr_stream(self):
+        sender = self.sender()
+        self.selected_rr_stream = sender.text()
 
     def get_parameter_selection(self):
         parameter_selection_container = QWidget()
