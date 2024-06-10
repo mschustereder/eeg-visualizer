@@ -13,6 +13,8 @@ FONT_SIZE_H1 = 20
 FONT_SIZE_H2 = 18
 FONT_SIZE_P = 14
 
+HORIZONTAL_ROW_SPACER = 150
+
 class CardWidget(QFrame):
     def __init__(self, title, title_is_h1=False, text_description=None, content=None):
         super().__init__()
@@ -139,6 +141,7 @@ class EegVisualizerMainWindow(QMainWindow):
         main_plot_dropdown.setStyleSheet("margin-top: 10px;")
         plot_label = QLabel("Plot:")
         plot_label.setStyleSheet("border: none;")
+        plot_label.setMinimumWidth(HORIZONTAL_ROW_SPACER)
         form_layout.addRow(plot_label, main_plot_dropdown)
         
         frequency_band_dropdown = QComboBox()
@@ -170,6 +173,7 @@ class EegVisualizerMainWindow(QMainWindow):
         sub_plot_dropdown.setStyleSheet("margin-top: 10px;")
         plot_label = QLabel("Plot:")
         plot_label.setStyleSheet("border: none;")
+        plot_label.setMinimumWidth(HORIZONTAL_ROW_SPACER)
         form_layout.addRow(plot_label, sub_plot_dropdown)
 
         form_container = QWidget()
