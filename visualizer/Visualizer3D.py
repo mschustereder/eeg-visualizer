@@ -279,7 +279,7 @@ class Visualizer3D(gl.GLViewWidget):
 
         #only update graph if accumulated data is FFT_SAMPLES samples long
         if len(self.data.fft_values_buffer) >= self.fft_buffer_len:
-
+            self.plot_item.show()
             #we want to get a spectrum every 100ms, so we will calulate overlapping fft windows, and thus use the fft_values_buffer as a FIFO buffer
             self.data.fft_values_buffer = self.data.fft_values_buffer[-self.fft_buffer_len:] 
             sample_time = data[-1][1] - data[0][1] #this is the time that has passed in the sample world
@@ -291,6 +291,8 @@ class Visualizer3D(gl.GLViewWidget):
             z = np.array(self.data.fft_vizualizer_values)
             colors = np.array(self.__get_colors(z, self.max))
             self.plot_item.setData(x, y, z, colors = colors)
+        else:
+            self.plot_item.hide()
 
     def on_resized(self, evt=None):
         self.frequency_ticks.set_fontsizes_from_pixel_size(self.pixelSize(QtGui.QVector3D(0, 0, 0)))
