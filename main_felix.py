@@ -13,10 +13,14 @@ import matplotlib.pyplot as plt
 import numpy as np
 import mne
 
+import pickle
+
+
 channel_names = []
-N_SAMPLES = 500
+N_SAMPLES = 250
 S_FREQU = 500
 
+#USE THIS TO USE LSLSTEAM
 lslhandler = LslHandler()
 all_streams = lslhandler.get_all_lsl_streams()
 print(lslhandler.get_all_lsl_streams_as_infostring())
@@ -31,10 +35,20 @@ while len(data) < N_SAMPLES:
     if(data_sample := eegprocessor.get_eeg_data_dict()) != None:
         channel_names = list(data_sample[0].keys())[:-10]
         data.append(list(data_sample[0].values())[:-10])
+######################################
 
+#USE THIS TO TEST THE APPLICATION TO THE SAME TEST DATA, ONCE RECORDED
+# with open("data_test.pkl" , "rb") as file:
+#     data = pickle.load(file)
 
-mean_data = (data - np.mean(data, axis=0)) / np.std(data, axis=0)
-mean_ch = np.mean(mean_data, axis=0)  # mean samples with channel dimension left
+# with open("channel_names.pkl" , "rb") as file:
+#     channel_names = pickle.load(file)
+###########################################
+
+# mean_data = (data - np.mean(data, axis=0)) / np.std(data, axis=0)
+mean_ch = np.mean(np.array(data), axis=0)  
+# mean_ch = np.mean(mean_data, axis=0)  
+
 
 # Draw topography
 biosemi_montage = mne.channels.make_standard_montage('biosemi64')  # set a montage, see mne document
@@ -54,52 +68,41 @@ info = mne.create_info(ch_names=biosemi_montage.ch_names, sfreq=500., ch_types='
 # evoked1 = mne.EvokedArray(mean_data.T, info)
 # evoked1.set_montage(biosemi_montage)
 
-raw = mne.io.RawArray(mean_data.T, info)
+raw = mne.io.RawArray(np.array(data).T , info)
+# raw = mne.io.RawArray(mean_data.T, info)
 raw.set_montage(biosemi_montage)
 
 
 fig, ax = plt.subplots()
 plt.ion()
 im, cn = mne.viz.plot_topomap(mean_ch, raw.info,axes=ax ,show=False)
-plt.show(block=False)
-# im, cn = mne.viz.plot_topomap(alpha_mean, raw2.info, show=True)
-
 plt.colorbar(im, ax=ax)
-
-# sent_samples = 0
-# k = -1
-# while True:
-#     new_data = []
-    
-#     if(new_data := eegprocessor.get_eeg_data_as_chunk()) != None:
-#         # new_data = [list(arr[0].values())[:-10] for arr in new_data]
-#         sent_samples += len(new_data)
-#         if(sent_samples > k*1000): 
-#             print(sent_samples)
-#             k+=1
-#     else: continue
-
-
+plt.show(block=False)
 
 while True:
     new_data = []
     
-    if(new_data := eegprocessor.get_eeg_data_as_chunk()) != None:
-        channel_names = list(new_data[0][0].keys())[:-10]
-        new_data = [list(arr[0].values())[:-10] for arr in new_data]
+    if(new_chunk := eegprocessor.get_eeg_data_as_chunk(N_SAMPLES)) != None:
+        channel_names = list(new_chunk[0][0].keys())[:-10]
+        new_data = [list(arr[0].values())[:-10] for arr in new_chunk]
     else: continue
 
     data = data[len(new_data):]
     data += new_data
 
-    mean_data = (data - np.mean(data, axis=0)) / np.std(data, axis=0)
-    mean_ch = np.mean(mean_data, axis=0)  # mean samples with channel dimension left
+    filtered_data = eegprocessor.filter_eeg_data(data, Filter.Alpha)
+    # filtered_data = data
+    # mean_data = (data - np.mean(data, axis=0)) / np.std(data, axis=0)
+    mean_ch = np.mean(np.array(filtered_data), axis=0)  
+    # mean_ch = np.mean(mean_data, axis=0)  
 
-    # alpha_data = mne.filter.filter_data(mean_data, S_FREQU, l_freq=ALPHA_BAND[0], h_freq=ALPHA_BAND[1])
-    # alpha_mean = np.mean(alpha_data, axis=0)
+
+    # alpha_data = mne.filter.filter_data(np.array(data).T, S_FREQU, l_freq=ALPHA_BAND[0], h_freq=ALPHA_BAND[1], verbose=False)
+    # alpha_mean = np.mean(alpha_data, axis=1)
 
     ax.clear()
-    im, cn = mne.viz.plot_topomap(mean_ch, raw.info,axes=ax ,show=True)
+    im, cn = mne.viz.plot_topomap(mean_ch, raw.info,axes=ax ,show=False)
+    # im, cn = mne.viz.plot_topomap(alpha_mean, raw.info,axes=ax ,show=False)
 
     ax.figure.canvas.draw()
     ax.figure.canvas.flush_events()
