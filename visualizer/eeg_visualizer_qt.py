@@ -134,6 +134,10 @@ class EegVisualizerMainWindow(QMainWindow):
         horizontal_layout = QHBoxLayout()
         horizontal_layout.addWidget(self.stream_selection_card)
         horizontal_container.setLayout(horizontal_layout)
+
+        if self.central_layout.count() > 0:
+            self.central_layout.removeWidget(self.container_widget)
+
         self.central_layout.addWidget(horizontal_container)
         self.adjust_stream_selection_card_size()
 
@@ -147,7 +151,8 @@ class EegVisualizerMainWindow(QMainWindow):
     def show_main_layout(self):
         EegVisualizerMainWindow.connect_to_selected_streams(self.selected_eeg_stream, self.selected_hr_stream, self.selected_rr_stream)
 
-        self.central_layout.removeWidget(self.central_layout.itemAt(0).widget())
+        if self.central_layout.count() > 0:
+            self.central_layout.removeWidget(self.central_layout.itemAt(0).widget())
 
         self.visualizer_3d, self.visualizer_hr = EegVisualizerMainWindow.setup_timer_and_get_visualizers_3d_and_hr(self.timer)
 
@@ -170,10 +175,10 @@ class EegVisualizerMainWindow(QMainWindow):
         layout.setColumnStretch(1, 1)
         layout.setColumnStretch(2, 1)
 
-        container_widget = QWidget()
-        container_widget.setLayout(layout)
+        self.container_widget = QWidget()
+        self.container_widget.setLayout(layout)
 
-        self.central_layout.addWidget(container_widget)
+        self.central_layout.addWidget(self.container_widget)
 
     def setup_timer_and_get_visualizers_3d_and_hr(timer):
         visualizer_3d = Visualizer3D()
@@ -252,6 +257,14 @@ class EegVisualizerMainWindow(QMainWindow):
         sender = self.sender()
         self.selected_rr_stream = sender.text()
 
+    def reselect_streams(self):
+        self.stream_selection_card = self.get_stream_selection_card()
+        while self.central_layout.count() > 0:
+            child = self.central_layout.takeAt(0)
+            if child.widget():
+                child.widget().deleteLater()
+        self.show_stream_selection_view()
+
     def get_parameter_selection(self):
         parameter_selection_container = QWidget()
         vertical_layout = QVBoxLayout()
@@ -259,6 +272,12 @@ class EegVisualizerMainWindow(QMainWindow):
         sub_plot_configuration = self.get_sub_plot_configuration()
         vertical_layout.addWidget(main_plot_configuration)
         vertical_layout.addWidget(sub_plot_configuration)
+
+        reselect_streams = QPushButton("Select LSL streams")
+
+        reselect_streams.clicked.connect(self.reselect_streams)
+
+        vertical_layout.addWidget(reselect_streams)
         parameter_selection_container.setLayout(vertical_layout)
         parameter_selection_card = CardWidget("Configuration", content=parameter_selection_container)
         return parameter_selection_card
