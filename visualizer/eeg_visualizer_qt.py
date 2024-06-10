@@ -4,7 +4,7 @@ from PySide6 import QtCore, QtGui
 import sys
 from PySide6.QtWidgets import QApplication
 from visualizer.Visualizer3D import Visualizer3D
-from visualizer.VisualizerHR import VisualizerHR
+from visualizer.VisualizerHR import VisualizerHR, HR_BIO_VARIABLE
 import visualizer.globals as gl
 from signalProcessor.EEGProcessor import EEGProcessor
 from signalProcessor.HRProcessor import HRProcessor
@@ -119,16 +119,16 @@ class EegVisualizerMainWindow(QMainWindow):
 
         self.central_layout.removeWidget(self.central_layout.itemAt(0).widget())
 
-        visualizer_3d, visualizer_hr = EegVisualizerMainWindow.setup_timer_and_get_visualizers_3d_and_hr(self.timer)
+        self.visualizer_3d, self.visualizer_hr = EegVisualizerMainWindow.setup_timer_and_get_visualizers_3d_and_hr(self.timer)
 
         layout = QGridLayout()
 
-        visualizer_3d.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
-        visualizer_hr.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+        self.visualizer_3d.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+        self.visualizer_hr.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
 
-        layout.addWidget(visualizer_3d, 0, 0, 2, 2)
-        layout.addWidget(visualizer_hr, 2, 0, 1, 2)
-        parameter_selection_container = EegVisualizerMainWindow.get_parameter_selection()
+        layout.addWidget(self.visualizer_3d, 0, 0, 2, 2)
+        layout.addWidget(self.visualizer_hr, 2, 0, 1, 2)
+        parameter_selection_container = self.get_parameter_selection()
         layout.addWidget(parameter_selection_container, 0, 2, 3, 1)
 
         layout.setRowStretch(0, 1)
@@ -175,11 +175,11 @@ class EegVisualizerMainWindow(QMainWindow):
         stream_selection_card = CardWidget("Select LSL Stream", content=container)
         return stream_selection_card
 
-    def get_parameter_selection():
+    def get_parameter_selection(self):
         parameter_selection_container = QWidget()
         vertical_layout = QVBoxLayout()
         main_plot_configuration = EegVisualizerMainWindow.get_main_plot_configuration()
-        sub_plot_configuration = EegVisualizerMainWindow.get_sub_plot_configuration()
+        sub_plot_configuration = self.get_sub_plot_configuration()
         vertical_layout.addWidget(main_plot_configuration)
         vertical_layout.addWidget(sub_plot_configuration)
         parameter_selection_container.setLayout(vertical_layout)
@@ -218,7 +218,7 @@ class EegVisualizerMainWindow(QMainWindow):
         main_plot_configuration = CardWidget("Main Plot Configuration", content=form_container)
         return main_plot_configuration
     
-    def get_sub_plot_configuration():
+    def get_sub_plot_configuration(self):
         form_layout = QFormLayout()
         
         sub_plot_dropdown = QComboBox()
@@ -229,8 +229,20 @@ class EegVisualizerMainWindow(QMainWindow):
         plot_label.setMinimumWidth(HORIZONTAL_ROW_SPACER)
         form_layout.addRow(plot_label, sub_plot_dropdown)
 
+        sub_plot_dropdown.currentIndexChanged.connect(lambda index: self.update_sub_plot(sub_plot_dropdown.itemText(index)))
+
         form_container = QWidget()
         form_container.setLayout(form_layout)
         
         sub_plot_configuration = CardWidget("Sub Plot Configuration", content=form_container)
         return sub_plot_configuration
+    
+    def update_sub_plot(self, plot_identifier):
+        if plot_identifier == 'BPM':
+            self.visualizer_hr.set_bio_variable(HR_BIO_VARIABLE.BPM)
+        elif plot_identifier == 'RMSSD':
+            self.visualizer_hr.set_bio_variable(HR_BIO_VARIABLE.RMSSD)
+        elif plot_identifier == 'SDNN':
+            self.visualizer_hr.set_bio_variable(HR_BIO_VARIABLE.SDNN)
+        elif plot_identifier == 'Poin care ratio':
+            self.visualizer_hr.set_bio_variable(HR_BIO_VARIABLE.POI_RAT)
