@@ -1,8 +1,8 @@
-from PySide6.QtWidgets import QMainWindow, QGridLayout, QWidget, QVBoxLayout, QComboBox, QSizePolicy, QLabel, QFrame
-from PySide6.QtCore import Qt
+from PySide6.QtWidgets import QMainWindow, QGridLayout, QWidget, QVBoxLayout, QComboBox, QSizePolicy, QLabel, QFrame, QFormLayout, QLineEdit
+from PySide6.QtCore import Qt, QSize
 from visualizer.Visualizer3D import Visualizer3D
 from visualizer.VisualizerHR import VisualizerHR
-from PySide6 import QtCore
+from PySide6 import QtCore, QtGui
 import visualizer.globals as gl
 import sys
 from PySide6.QtWidgets import QApplication
@@ -14,19 +14,22 @@ FONT_SIZE_H2 = 18
 FONT_SIZE_P = 14
 
 class CardWidget(QFrame):
-    def __init__(self, title, text_description=None, content=None):
+    def __init__(self, title, title_is_h1=False, text_description=None, content=None):
         super().__init__()
 
         self.setFrameShape(QFrame.NoFrame)
         self.setFrameShadow(QFrame.Raised)
 
-        layout = QVBoxLayout()
+        card_grid_layout = QGridLayout()
 
         self.title_label = QLabel(title)
         self.title_label.setAlignment(Qt.AlignCenter)
-        self.title_label.setStyleSheet(f"font-size: {FONT_SIZE_H2}px; font-weight: bold; border: none;")
+        title_font_size = FONT_SIZE_H1 if title_is_h1 else FONT_SIZE_H2
+        self.title_label.setStyleSheet(f"font-size: {title_font_size}px; font-weight: bold; border: none;")
 
-        layout.addWidget(self.title_label)
+        card_grid_layout.addWidget(self.title_label, 0, 0)
+
+        layout = QVBoxLayout()
 
         if text_description != None:
             self.description_label = QLabel(text_description)
@@ -38,7 +41,10 @@ class CardWidget(QFrame):
         if content != None:
             layout.addWidget(content)
 
-        self.setLayout(layout)
+        content_container = QWidget()
+        content_container.setLayout(layout)
+        card_grid_layout.addWidget(content_container, 1, 0, 10, 1)
+        self.setLayout(card_grid_layout)
 
         self.setStyleSheet("""
             QFrame {
@@ -117,17 +123,58 @@ class EegVisualizerMainWindow(QMainWindow):
     def get_parameter_selection():
         parameter_selection_container = QWidget()
         vertical_layout = QVBoxLayout()
-        title = QLabel("Parameter Selection")
-        title.setAlignment(Qt.AlignCenter)
-        title.setStyleSheet(f"font-size: {FONT_SIZE_H1}px; font-weight: bold;")
-        dropdown = QComboBox()
-        dropdown.addItem('Option 1')
-        dropdown.addItem('Option 2')
-        dropdown.addItem('Option 3')
-        main_plot_configuration = CardWidget("Main Plot Configuration", text_description="This is a description for card 1.", content=dropdown)
-        sub__plot_configuration = CardWidget("Sub Plot Configuration", text_description="This is a description for card 2.")
-        vertical_layout.addWidget(title)
+        main_plot_configuration = EegVisualizerMainWindow.get_main_plot_configuration()
+        sub_plot_configuration = EegVisualizerMainWindow.get_sub_plot_configuration()
         vertical_layout.addWidget(main_plot_configuration)
-        vertical_layout.addWidget(sub__plot_configuration)
+        vertical_layout.addWidget(sub_plot_configuration)
         parameter_selection_container.setLayout(vertical_layout)
-        return parameter_selection_container
+        parameter_selection_card = CardWidget("Configuration", content=parameter_selection_container)
+        return parameter_selection_card
+       
+    def get_main_plot_configuration():
+        form_layout = QFormLayout()
+        
+        main_plot_dropdown = QComboBox()
+        main_plot_dropdown.addItems(['Spectrogram', 'Topoplot'])
+        main_plot_dropdown.setStyleSheet("margin-top: 10px;")
+        plot_label = QLabel("Plot:")
+        plot_label.setStyleSheet("border: none;")
+        form_layout.addRow(plot_label, main_plot_dropdown)
+        
+        frequency_band_dropdown = QComboBox()
+        frequency_band_dropdown.addItems(['Alpha', 'Beta', 'Theta', 'Delta'])
+        frequency_band_dropdown.setStyleSheet("margin-top: 10px;")
+        frequency_band_label = QLabel("Frequency Band:")
+        frequency_band_label.setStyleSheet("border: none;")
+        form_layout.addRow(frequency_band_label, frequency_band_dropdown)
+        
+        seconds_shown_input = QLineEdit()
+        seconds_shown_input.setValidator(QtGui.QIntValidator())
+        seconds_shown_input.setText("30")
+        seconds_shown_input.setStyleSheet("margin-top: 10px;")
+        seconds_shown_label = QLabel("Seconds Shown:")
+        seconds_shown_label.setStyleSheet("border: none;")
+        form_layout.addRow(seconds_shown_label, seconds_shown_input)
+
+        form_container = QWidget()
+        form_container.setLayout(form_layout)
+        
+        main_plot_configuration = CardWidget("Main Plot Configuration", content=form_container)
+        return main_plot_configuration
+    
+    def get_sub_plot_configuration():
+        form_layout = QFormLayout()
+        
+        sub_plot_dropdown = QComboBox()
+        sub_plot_dropdown.addItems(['BPM', 'RMSSD', 'SDNN', 'Poin care ratio'])
+        sub_plot_dropdown.setStyleSheet("margin-top: 10px;")
+        plot_label = QLabel("Plot:")
+        plot_label.setStyleSheet("border: none;")
+        form_layout.addRow(plot_label, sub_plot_dropdown)
+
+        form_container = QWidget()
+        form_container.setLayout(form_layout)
+        
+        sub_plot_configuration = CardWidget("Sub Plot Configuration", content=form_container)
+        return sub_plot_configuration
+
