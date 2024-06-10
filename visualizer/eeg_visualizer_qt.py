@@ -1,4 +1,4 @@
-from PySide6.QtWidgets import QMainWindow, QGridLayout, QWidget, QVBoxLayout, QComboBox, QSizePolicy, QLabel, QFrame, QFormLayout, QLineEdit, QRadioButton, QPushButton, QHBoxLayout
+from PySide6.QtWidgets import QMainWindow, QGridLayout, QWidget, QVBoxLayout, QComboBox, QSizePolicy, QLabel, QFrame, QFormLayout, QRadioButton, QPushButton, QHBoxLayout, QSpinBox
 from PySide6.QtCore import Qt, QSize
 from PySide6 import QtCore, QtGui
 import sys
@@ -281,15 +281,15 @@ class EegVisualizerMainWindow(QMainWindow):
         frequency_band_label.setStyleSheet("border: none;")
         form_layout.addRow(frequency_band_label, frequency_band_dropdown)
         
-        seconds_shown_input = QLineEdit()
-        seconds_shown_input.setValidator(QtGui.QIntValidator())
-        seconds_shown_input.setText(f"{DEFAULT_SECONDS_SHOWN}")
+        seconds_shown_input = QSpinBox()
+        seconds_shown_input.setRange(1, 100)
+        seconds_shown_input.setValue(DEFAULT_SECONDS_SHOWN)
         seconds_shown_input.setStyleSheet("margin-top: 10px;")
         seconds_shown_label = QLabel("Seconds Shown:")
         seconds_shown_label.setStyleSheet("border: none;")
         form_layout.addRow(seconds_shown_label, seconds_shown_input)
 
-        seconds_shown_input.editingFinished.connect(self.handle_seconds_shown_change)
+        seconds_shown_input.valueChanged.connect(self.handle_seconds_shown_change)
 
         form_container = QWidget()
         form_container.setLayout(form_layout)
