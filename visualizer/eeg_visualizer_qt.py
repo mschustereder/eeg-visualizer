@@ -80,7 +80,7 @@ class EegVisualizerMainWindow(QMainWindow):
     def __init__(self, timer):
         super().__init__()
 
-        self.setWindowTitle("EEG Visualizer Main Window")
+        self.setWindowTitle("EEG Visualizer")
 
         self.central_widget = QWidget()
         self.setCentralWidget(self.central_widget)
