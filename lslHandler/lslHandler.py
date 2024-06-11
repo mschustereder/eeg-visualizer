@@ -79,7 +79,7 @@ class LslHandler:
         return None
     
     def get_inlet(self,stream : StreamInfo) -> StreamInlet:
-        return self.active_streams[stream][0]
+        return self.active_streams[stream]
     
     def disconnect(self, stream : StreamInfo):
         self.get_inlet(stream).close_stream()
