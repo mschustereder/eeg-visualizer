@@ -26,17 +26,13 @@ if __name__ == "__main__":
     window3 = QMainWindow()
     bar = Visualizer3DColorBar()
     window3.setCentralWidget(bar)
-    vis = Visualizer3D(app, bar)
+    vis = Visualizer3D(bar)
     vis2 = VisualizerHR()
-    timer = QtCore.QTimer()
-    timer.setInterval(gl.EEG_GRAPH_INTERVAL_S)
-    timer.start()
     window.setCentralWidget(vis)
     window.show()
  
     window2 = QMainWindow()
     vis2 = VisualizerHR()
-    timer.timeout.connect(vis2.update_graph)
     window2.setCentralWidget(vis2)
     window2.show()
     window3.show()
@@ -51,6 +47,7 @@ if __name__ == "__main__":
 
 
     ret = app.exec()
-    vis.stop_and_wait_for_proccess_thread()
+    vis.stop_and_wait_for_process_thread()
+    vis2.stop_and_wait_for_process_thread()
     sys.exit(ret)
     

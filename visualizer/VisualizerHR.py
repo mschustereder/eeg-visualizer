@@ -5,6 +5,7 @@ import visualizer.globals as g
 from visualizer.HRGraphFrame import HRGraphFrame, BioVariableGraphSettings
 import time
 from enum import Enum, auto
+import threading
 
 
 class HR_BIO_VARIABLE(Enum):
@@ -15,6 +16,8 @@ class HR_BIO_VARIABLE(Enum):
 
 
 class VisualizerHR(pg.PlotWidget):
+
+    update_graph_signal = QtCore.Signal()
 
     def __init__(self, parent=None, background='default', plotItem=None, **kargs):
         super().__init__(parent, background, plotItem, **kargs)
@@ -29,6 +32,49 @@ class VisualizerHR(pg.PlotWidget):
         #time axis label
         self.setLabel('bottom', 'Time', units ='s')
 
+        self.thread_end_event = threading.Event()
+        self.update_graph_signal.connect(self.update_graph_from_thread)
+        self.processor_thread = threading.Thread(target=self.processor_thread_func)
+        self.plotting_done_cond = threading.Condition()
+        self.plotting_done = False
+        self.processor_thread.start()
+
+    
+    def processor_thread_func(self):
+        while(not self.thread_end_event.is_set()):
+
+            if g.hr_processor == None:
+                time.sleep(g.GRAPH_UPDATE_PAUSE_S)
+                return
+
+            bpm, rmssd, sdnn, poi_rat = g.hr_processor.get_all_bio_vars()
+            timestamp = time.time() - self.graph_start_time
+            if bpm is not None:
+                bpm = bpm[0][0]
+
+            self._add_data(timestamp, self.data.timestamps_bpm, bpm, self.data.bpm_values)
+            self._add_data(timestamp, self.data.timestamps_rmssd, rmssd, self.data.rmssd_values)
+            self._add_data(timestamp, self.data.timestamps_sdnn, sdnn, self.data.sdnn_values)
+            self._add_data(timestamp, self.data.timestamps_poi_rat, poi_rat, self.data.poi_rat_values)
+
+            self.data.timestamps_bpm, self.data.bpm_values = self._cut_hr_buffer(self.data.timestamps_bpm, self.data.bpm_values)
+            self.data.timestamps_rmssd, self.data.rmssd_values = self._cut_hr_buffer(self.data.timestamps_rmssd, self.data.rmssd_values)
+            self.data.timestamps_sdnn, self.data.sdnn_values = self._cut_hr_buffer(self.data.timestamps_sdnn, self.data.sdnn_values)
+            self.data.timestamps_poi_rat, self.data.poi_rat_values = self._cut_hr_buffer(self.data.timestamps_poi_rat, self.data.poi_rat_values)
+
+            self._set_y_range(self.data.bpm_values, self.data.bpm_settings)
+            self._set_y_range(self.data.rmssd_values, self.data.rmssd_settings)
+            self._set_y_range(self.data.sdnn_values, self.data.sdnn_settings)
+            self._set_y_range(self.data.poi_rat_values, self.data.poi_rat_settings)
+
+            self.update_graph_signal.emit()
+
+            self.plotting_done_cond.acquire()
+            while self.plotting_done == False:
+                self.plotting_done_cond.wait()
+            self.plotting_done_cond.release()
+
+            time.sleep(g.GRAPH_UPDATE_PAUSE_S)
 
     def _cut_hr_buffer(self, timestamps, values):
         # we only need the last HR_GRAPH_TIME_RANGE_SEC seconds
@@ -97,29 +143,7 @@ class VisualizerHR(pg.PlotWidget):
             timestamps.append(new_timestamp)
 
 
-    def update_graph(self):
-        if g.hr_processor == None:
-            return
-
-        bpm, rmssd, sdnn, poi_rat = g.hr_processor.get_all_bio_vars()
-        timestamp = time.time() - self.graph_start_time
-        if bpm is not None:
-            bpm = bpm[0][0]
-        self._add_data(timestamp, self.data.timestamps_bpm, bpm, self.data.bpm_values)
-        self._add_data(timestamp, self.data.timestamps_rmssd, rmssd, self.data.rmssd_values)
-        self._add_data(timestamp, self.data.timestamps_sdnn, sdnn, self.data.sdnn_values)
-        self._add_data(timestamp, self.data.timestamps_poi_rat, poi_rat, self.data.poi_rat_values)
-
-        self.data.timestamps_bpm, self.data.bpm_values = self._cut_hr_buffer(self.data.timestamps_bpm, self.data.bpm_values)
-        self.data.timestamps_rmssd, self.data.rmssd_values = self._cut_hr_buffer(self.data.timestamps_rmssd, self.data.rmssd_values)
-        self.data.timestamps_sdnn, self.data.sdnn_values = self._cut_hr_buffer(self.data.timestamps_sdnn, self.data.sdnn_values)
-        self.data.timestamps_poi_rat, self.data.poi_rat_values = self._cut_hr_buffer(self.data.timestamps_poi_rat, self.data.poi_rat_values)
-
-        self._set_y_range(self.data.bpm_values, self.data.bpm_settings)
-        self._set_y_range(self.data.rmssd_values, self.data.rmssd_settings)
-        self._set_y_range(self.data.sdnn_values, self.data.sdnn_settings)
-        self._set_y_range(self.data.poi_rat_values, self.data.poi_rat_settings)
-
+    def update_graph_from_thread(self):
         #these variables act like a pointer
         value_buffer = None
         timestamp_buffer = None
@@ -147,3 +171,12 @@ class VisualizerHR(pg.PlotWidget):
         self.setXRange(*self.get_x_time_range(timestamp_buffer))
         self.setYRange(0, settings.max)
         self.line_plot.setData(timestamp_buffer, value_buffer)
+
+        self.plotting_done_cond.acquire()
+        self.plotting_done = True
+        self.plotting_done_cond.notify()
+        self.plotting_done_cond.release()
+
+    def stop_and_wait_for_process_thread(self):
+        self.thread_end_event.is_set()
+        self.processor_thread.join()

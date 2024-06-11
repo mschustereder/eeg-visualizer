@@ -119,7 +119,7 @@ class Visualizer3D(gl.GLViewWidget):
     y_range = 40
     z_range = 10
     
-    def __init__(self, app, color_bar : Visualizer3DColorBar= None, cm = pg.colormap.get('turbo')):
+    def __init__(self, color_bar : Visualizer3DColorBar= None, cm = pg.colormap.get('turbo')):
         super().__init__()     
         self.setBackgroundColor(255, 255, 255)
         self.cm = cm
@@ -135,7 +135,6 @@ class Visualizer3D(gl.GLViewWidget):
         self.scale_factor_z = 1
         self.current_z_scale_factor = 1
         self.do_z_scale = False
-        self.app = app
 
         self.resized.connect(self.on_resized)
 
@@ -187,15 +186,17 @@ class Visualizer3D(gl.GLViewWidget):
     def processor_thread_func(self):
         while(not self.thread_end_event.is_set()):
             if g.eeg_processor is None:
-                time.sleep(g.EEG_GRAPH_INTERVAL_S)
+                time.sleep(g.GRAPH_UPDATE_PAUSE_S)
                 continue
             
 
             data = g.eeg_processor.get_eeg_data_as_chunk()
 
             if data == None:
-                time.sleep(g.EEG_GRAPH_INTERVAL_S)
+                time.sleep(g.GRAPH_UPDATE_PAUSE_S)
                 continue
+
+            #g.eeg_processor.filter_eeg_data(list(sample[0].values()), )
             
             for sample in data:
                 self.data.fft_values_buffer.append(mean(list(sample[0].values())))
@@ -216,7 +217,7 @@ class Visualizer3D(gl.GLViewWidget):
                     self.plotting_done_cond.wait()
                 self.plotting_done_cond.release()
 
-            time.sleep(g.EEG_GRAPH_INTERVAL_S)
+            time.sleep(g.GRAPH_UPDATE_PAUSE_S)
 
     def initialize(self, fft_buffer_len, seconds_shown):
         self.max = 0
@@ -320,7 +321,7 @@ class Visualizer3D(gl.GLViewWidget):
     def on_resized(self, evt=None):
         self.frequency_ticks.set_fontsizes_from_pixel_size(self.pixelSize(QtGui.QVector3D(0, 0, 0)))
 
-    def stop_and_wait_for_proccess_thread(self):
+    def stop_and_wait_for_process_thread(self):
         self.thread_end_event.is_set()
         self.processor_thread.join()
 
