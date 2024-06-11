@@ -1,11 +1,11 @@
 from  lslHandler.lslHandler import LslHandler
+from lslHandler.lslHandler import SAMPLE_COUNT_MAX_QUEUE
 from pylsl import StreamInfo
 from typing import Dict, Tuple, List
 import numpy as np
 import mne
 import matplotlib.pyplot as plt
 from dataclasses import dataclass
-
 
 
 DELTA_BAND = (0.1,4)
@@ -40,130 +40,43 @@ class EEGProcessor:
                 self.eeg_layout.append(label)
             channels = channels.next_sibling()
         
-            
     lslhandler : LslHandler
     stream : StreamInfo
     eeg_layout = [] #store as list since the order matters
     first_timestamp = 0
     sampling_frequency = 0
 
-    def get_eeg_data_dict(self):
-        data_dict = {}
-        data = self.lslhandler.get_data_sample(self.stream)
-        if data != None:
-            channel_data = data[0]
-            timestamp = data[1]
+    def get_eeg_layout(self):
+        return self.eeg_layout
+
+    def _correct_timestamps(self, list_to_change: List[Tuple[List[float], float]]) -> List[Tuple[List[float], float]]:
+        data_with_corrected_timestamps = []
+        for index,data_tuple in enumerate(list_to_change):
+            timestamp = data_tuple[1]
             if self.first_timestamp == 0:
                 self.first_timestamp = timestamp
-            timestamp = (timestamp- self.first_timestamp) 
-                
-            assert len(channel_data) == len(self.eeg_layout)
-            for i,channel in enumerate(self.eeg_layout):
-                data_dict[channel] = channel_data[i]
+            data_with_corrected_timestamps.append((list_to_change[index][0], timestamp-self.first_timestamp))
+        return data_with_corrected_timestamps
 
-            return data_dict, timestamp
-        return None
+    def get_available_eeg_data(self, max_samples = SAMPLE_COUNT_MAX_QUEUE)  -> List[Tuple[List[float], float]]:
+        data = self.lslhandler.get_available_data(self.stream, max_samples)
+        if data:
+            return self._correct_timestamps(data)
+
+    def get_available_eeg_data_without_timestamps(self, max_samples = SAMPLE_COUNT_MAX_QUEUE) -> List[List[float]]:
+        return self.lslhandler.get_available_data_without_timestamps(self.stream, max_samples)
     
-    def get_eeg_data_as_chunk(self, max_samples=1024) -> List[Tuple[Dict,float]]:
-        list_of_data_dicts = []
-
-        data_list = self.lslhandler.get_available_data_as_chunk(self.stream, max_samples)
-        if data_list: # an empty list evaluates to False
-            for data in data_list:
-                data_dict = {}
-                channel_data = data[0]
-                timestamp = data[1]
-                if self.first_timestamp == 0:
-                    self.first_timestamp = timestamp
-                timestamp = (timestamp- self.first_timestamp) 
-                    
-                assert len(channel_data) == len(self.eeg_layout)
-                for i,channel in enumerate(self.eeg_layout):
-                    data_dict[channel] = channel_data[i]
-
-                list_of_data_dicts.append((data_dict, timestamp))
-            return list_of_data_dicts
-        return None
+    def get_specific_amount_of_eeg_samples(self, required_sample_count) -> List[Tuple[List[float], float]]:
+        data = self.lslhandler.get_specific_amount_of_samples(self.stream, required_sample_count)
+        return self._correct_timestamps(data)
     
-    def filter_eeg_data(self, data, filter: Filter) : 
-        # list_without_keys = [[v for v in d[0].values()] for d in data]
-        list_without_keys = data
-        filtered_data = mne.filter.filter_data(np.array(list_without_keys).T, self.sampling_frequency, l_freq=filter[0], h_freq=filter[1], verbose=False)
-        # for i, d in enumerate(data):
-        #     for j, key in enumerate(d[0]):
-        #         d[0][key] = filtered_data[j][i]
+    def get_specific_amount_of_eeg_samples_without_timestamps(self, required_sample_count) -> List[List[float]]:
+        return self.lslhandler.get_specific_amount_of_samples_without_timestamps(self.stream, required_sample_count)
+    
+
+    def filter_eeg_data(self, data : List[List[float]], filter: Filter) -> np.ndarray: 
+        filtered_data = mne.filter.filter_data(np.array(data).T, self.sampling_frequency, l_freq=filter[0], h_freq=filter[1], verbose=False)
         
         return filtered_data.T
-
-    def return_topoplot_matplotlib_figure(self):
-        channel_names = []
-        N_SAMPLES = 500
-        S_FREQU = 500
-
-        lslhandler = self.lslhandler
-        all_streams = lslhandler.get_all_lsl_streams()
-        print(lslhandler.get_all_lsl_streams_as_infostring())
-        assert len(all_streams) != 0
-        for stream_index in range(len(all_streams)):
-            lslhandler.connect_to_specific_lsl_stream(all_streams[stream_index])
-            lslhandler.start_data_recording_thread(all_streams[stream_index])
-
-        eegprocessor = self
-        data = []
-        while len(data) < N_SAMPLES:
-            if(data_sample := eegprocessor.get_eeg_data_dict()) != None:
-                channel_names = list(data_sample[0].keys())[:-10]
-                data.append(list(data_sample[0].values())[:-10])
-
-
-        mean_data = (data - np.mean(data, axis=0)) / np.std(data, axis=0)
-        mean_ch = np.mean(mean_data, axis=0)  # mean samples with channel dimension left
-
-        # Draw topography
-        biosemi_montage = mne.channels.make_standard_montage('biosemi64')  # set a montage, see mne document
-        index_list = []  # correspond channel
-        for ch_name in channel_names:
-            found = False
-            for index, biosemi_name in enumerate(biosemi_montage.ch_names):
-                if ch_name == biosemi_name:
-                    index_list.append(index)
-                    found=True
-
-            assert(found)
-        biosemi_montage.ch_names = [biosemi_montage.ch_names[i] for i in index_list]
-        biosemi_montage.dig = [biosemi_montage.dig[i+3] for i in index_list]
-        info = mne.create_info(ch_names=biosemi_montage.ch_names, sfreq=500., ch_types='eeg')  # sample rate
-
-        evoked = mne.EvokedArray(mean_data.T, info)
-        evoked.set_montage(biosemi_montage)
-
-        # raw = mne.io.RawArray(mean_data.T, info)
-        # raw.set_montage(biosemi_montage)
-
-        fig, ax = plt.subplots()
-        # plt.ion()
-        im, cn = mne.viz.plot_topomap(mean_ch, evoked.info, axes = ax, show=False)
-
-        return fig
     
 
-
-#The main function is just for testing purposes
-def main():
-    lslhandler = LslHandler()
-    all_streams = lslhandler.get_all_lsl_streams()
-    print(lslhandler.get_all_lsl_streams_as_infostring())
-    assert len(all_streams) != 0
-    for stream_index in range(len(all_streams)):
-        lslhandler.connect_to_specific_lsl_stream(all_streams[stream_index])
-        lslhandler.start_data_recording_thread(all_streams[stream_index])
-
-    eegprocessor = EEGProcessor(lslhandler, lslhandler.get_stream_by_name("BrainVision RDA"))
-    while True:
-        if(data_list := eegprocessor.get_eeg_data_as_chunk()) != None:
-            print(all(d[0] == data_list[0][0] for d in data_list))
-            for data in data_list:
-                print(f"Recieved data: {data[0]} with timestamp {data[1]}")
-
-
-        

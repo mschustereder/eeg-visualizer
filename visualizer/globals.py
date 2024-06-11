@@ -1,5 +1,5 @@
 from  lslHandler.lslHandler import LslHandler
-
+from signalProcessor.EEGProcessor import EEGProcessor
 
 
 #CONSTANTS
@@ -27,7 +27,7 @@ MAX_HR_DATA_SAMPLES =100
 lsl_handler = LslHandler()
 
 #global eeg processor object
-eeg_processor = None
+eeg_processor : EEGProcessor = None
 hr_processor = None
 
  
