@@ -35,14 +35,14 @@ class VisualizerTopoPlot(FigureCanvas):
         self.timer.add_callback(self.update_plot)
         self.timer.start()
     
+    eegprocessor : EEGProcessor
+
     def update_plot(self):
-        # self.line.set_ydata(np.sin(self.x + np.random.randn() * 0.1))  # Update data with some noise
         new_data = self.get_data()
         self.data = self.data[len(new_data):]
         self.data += new_data
         
-        filtered_data = self.eegprocessor.filter_eeg_data(self.data, self.filter)
-        # filtered_data = self.data
+        filtered_data = self.eegprocessor.filter_eeg_data_from_list(self.data, self.filter)
         mean_ch = np.mean(np.array(filtered_data), axis=0) 
 
         self.ax.clear()

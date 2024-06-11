@@ -64,6 +64,16 @@ class EEGProcessor:
             return data_dict, timestamp
         return None
     
+    def get_size_defined_chunk_as_list(self, num_samples):
+        data_list = []
+        while (len:= len(data_list)) < num_samples:
+            data_list.append(self.lslhandler.get_available_data_as_chunk(self.stream, num_samples-len))
+        return data_list
+
+    def get_available_data_as_list(self, max_samples):
+        return self.lslhandler.get_available_data_as_chunk(self.stream, max_samples)
+
+
     def get_eeg_data_as_chunk(self, max_samples=1024) -> List[Tuple[Dict,float]]:
         list_of_data_dicts = []
 
@@ -85,13 +95,18 @@ class EEGProcessor:
             return list_of_data_dicts
         return None
     
-    def filter_eeg_data(self, data, filter: Filter) : 
-        # list_without_keys = [[v for v in d[0].values()] for d in data]
+    def filter_eeg_data_from_list(self, data : List[float], filter: Filter) -> np.ndarray: 
+        filtered_data = mne.filter.filter_data(np.array(data).T, self.sampling_frequency, l_freq=filter[0], h_freq=filter[1], verbose=False)
+        
+        return filtered_data.T
+    
+    def filter_eeg_data_from_dict(self, data : List[Tuple[Dict,float]], filter: Filter) : 
+        list_without_keys = [[v for v in d[0].values()] for d in data]
         list_without_keys = data
         filtered_data = mne.filter.filter_data(np.array(list_without_keys).T, self.sampling_frequency, l_freq=filter[0], h_freq=filter[1], verbose=False)
-        # for i, d in enumerate(data):
-        #     for j, key in enumerate(d[0]):
-        #         d[0][key] = filtered_data[j][i]
+        for i, d in enumerate(data):
+            for j, key in enumerate(d[0]):
+                d[0][key] = filtered_data[j][i]
         
         return filtered_data.T
 
