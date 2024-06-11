@@ -6,7 +6,7 @@ import sys
 from PySide6.QtWidgets import QApplication, QMainWindow
 from visualizer.Visualizer3D import Visualizer3D, Visualizer3DColorBar
 from visualizer.VisualizerHR import VisualizerHR
-from visualizer.VisualizerTopoPlot import VisualizerTopoPlot
+# from visualizer.VisualizerTopoPlot import VisualizerTopoPlot
 from PySide6 import QtCore
 
 
@@ -43,12 +43,12 @@ if __name__ == "__main__":
     window3.show()
 
 
-## Visualizer for topoplot:
-    # window3 = QMainWindow()
-    # central_widget = QWidget()
-    # vis_topo = VisualizerTopoPlot(central_widget)
-    # window3.setCentralWidget(vis_topo)
-    # window3.show()
+# ## Visualizer for topoplot:
+#     window3 = QMainWindow()
+#     central_widget = QWidget()
+#     vis_topo = VisualizerTopoPlot(central_widget)
+#     window3.setCentralWidget(vis_topo)
+#     window3.show()
 
 
 

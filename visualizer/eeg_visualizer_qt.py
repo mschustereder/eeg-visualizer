@@ -123,7 +123,7 @@ class EegVisualizerMainWindow(QMainWindow):
         rr_stream = streams[2]
 
         gl.eeg_processor = EEGProcessor(gl.lsl_handler, gl.lsl_handler.get_stream_by_name(eeg_stream.name()))
-        gl.hr_processor = HRProcessor(gl.lsl_handler, gl.lsl_handler.get_stream_by_name(hr_stream.name()), gl.lsl_handler.get_stream_by_name(rr_stream.name()))
+        gl.hr_processor = HRProcessor(gl.lsl_handler, gl.lsl_handler.get_stream_by_name(hr_stream.name()), gl.lsl_handler.get_stream_by_name(rr_stream.name()), gl.MAX_HR_DATA_SAMPLES)
 
     def resizeEvent(self, event):
         if self.stream_selection_card.isVisible():
