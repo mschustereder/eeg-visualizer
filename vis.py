@@ -50,5 +50,7 @@ if __name__ == "__main__":
 #     window3.show()
 
 
-
-    sys.exit(app.exec())
+    ret = app.exec()
+    vis.stop_and_wait_for_proccess_thread()
+    sys.exit(ret)
+    
