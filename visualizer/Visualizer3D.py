@@ -113,6 +113,8 @@ class Visualizer3D(gl.GLViewWidget):
     grid_size = 200
     grid_space = 5
     update_spectrum_signal = QtCore.Signal()
+    loading_buffer_start_signal = QtCore.Signal()
+    loading_buffer_end_signal = QtCore.Signal()
 
     #the values for x, y and z than can be seen from the camera
     x_range = 48
@@ -184,6 +186,9 @@ class Visualizer3D(gl.GLViewWidget):
         self.data.frequencies = frequencies[self.frequency_cut_index_bottom:self.frequency_cut_index_top]
 
     def processor_thread_func(self):
+        
+        loading = False
+
         while(not self.thread_end_event.is_set()):
             if g.eeg_processor is None:
                 time.sleep(g.GRAPH_UPDATE_PAUSE_S)
@@ -203,6 +208,12 @@ class Visualizer3D(gl.GLViewWidget):
 
             #only update graph if accumulated data is FFT_SAMPLES samples long
             if len(self.data.fft_values_buffer) >= self.fft_buffer_len:
+                
+                if loading:
+                    print("loading end")
+                    self.loading_buffer_end_signal.emit()
+                loading = False
+
                 #we want to get a spectrum every 100ms, so we will calulate overlapping fft windows, and thus use the fft_values_buffer as a FIFO buffer
                 self.data.fft_values_buffer = self.data.fft_values_buffer[-self.fft_buffer_len:] 
                 sample_time = data[-1][1] - data[0][1] #this is the time that has passed in the sample world
@@ -216,6 +227,11 @@ class Visualizer3D(gl.GLViewWidget):
                 while self.plotting_done == False:
                     self.plotting_done_cond.wait()
                 self.plotting_done_cond.release()
+            else:
+                if loading == False:
+                    self.loading_buffer_start_signal.emit()
+                    print("loading start")
+                loading = True
 
             time.sleep(g.GRAPH_UPDATE_PAUSE_S)
 
