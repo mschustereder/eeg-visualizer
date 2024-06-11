@@ -21,6 +21,7 @@ class Filter:
     Alpha : Tuple = ALPHA_BAND
     Beta : Tuple = BETA_BAND
     Gamma : Tuple = GAMMA_BAND
+    NoNe: Tuple = (0,100)
 
 
 #Source: https://de.wikipedia.org/wiki/Elektroenzephalografie#EEG-Frequenzb%C3%A4nder_und_Graphoelemente

@@ -9,7 +9,7 @@ from signalProcessor.EEGProcessor import EEGProcessor
 import visualizer.globals as g
 
 
-N_SAMPLES = 100
+N_SAMPLES = 1024
 S_FREQU = 500
 
 
@@ -20,6 +20,7 @@ class VisualizerTopoPlot(FigureCanvas):
         self.data = first_data
         self.set_montage(first_data)
         mean_ch = np.mean(np.array(first_data), axis=0) 
+        self.filter = Filter.NoNe
         
 
         self.fig, self.ax = plt.subplots()
@@ -30,7 +31,7 @@ class VisualizerTopoPlot(FigureCanvas):
         im, cn = mne.viz.plot_topomap(mean_ch, self.raw.info,axes=self.ax ,show=False)
         plt.colorbar(im, ax=self.ax)
                 
-        self.timer = self.fig.canvas.new_timer(interval=1)  # Update every 50 ms
+        self.timer = self.fig.canvas.new_timer(interval=g.EEG_GRAPH_INTERVAL_MS)  # Update every 50 ms
         self.timer.add_callback(self.update_plot)
         self.timer.start()
     
@@ -40,7 +41,7 @@ class VisualizerTopoPlot(FigureCanvas):
         self.data = self.data[len(new_data):]
         self.data += new_data
         
-        filtered_data = self.eegprocessor.filter_eeg_data(self.data, Filter.Alpha)
+        filtered_data = self.eegprocessor.filter_eeg_data(self.data, self.filter)
         # filtered_data = self.data
         mean_ch = np.mean(np.array(filtered_data), axis=0) 
 
