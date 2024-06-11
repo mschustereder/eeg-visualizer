@@ -157,7 +157,7 @@ class Visualizer3D(gl.GLViewWidget):
         self.frequency_ticks = YAxis(self, "Frequency (Hz)")
         self.frequency_ticks.add_ticks(list(range(0, g.FREQUENCY_MAX+5, 5)), self.scale_factor_y, (-frequency_range/2 - g.FREQUENCY_MIN), -500)
 
-
+        self.thread_end_event = threading.Event()
         self.update_spectrum_signal.connect(self.update_spectrum_from_thread)
         self.processor_thread = threading.Thread(target=self.processor_thread_func)
         self.plotting_done_cond = threading.Condition()
@@ -185,7 +185,7 @@ class Visualizer3D(gl.GLViewWidget):
         self.data.frequencies = frequencies[self.frequency_cut_index_bottom:self.frequency_cut_index_top]
 
     def processor_thread_func(self):
-        while(True):
+        while(not self.thread_end_event.is_set()):
             if g.eeg_processor is None:
                 time.sleep(g.EEG_GRAPH_INTERVAL_S)
                 continue
@@ -319,3 +319,8 @@ class Visualizer3D(gl.GLViewWidget):
 
     def on_resized(self, evt=None):
         self.frequency_ticks.set_fontsizes_from_pixel_size(self.pixelSize(QtGui.QVector3D(0, 0, 0)))
+
+    def stop_and_wait_for_proccess_thread(self):
+        self.thread_end_event.is_set()
+        self.processor_thread.join()
+
