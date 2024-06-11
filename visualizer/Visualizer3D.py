@@ -121,7 +121,7 @@ class Visualizer3D(gl.GLViewWidget):
     y_range = 40
     z_range = 10
     
-    def __init__(self, color_bar : Visualizer3DColorBar= None, cm = pg.colormap.get('turbo')):
+    def __init__(self, eeg_processor, color_bar : Visualizer3DColorBar= None, cm = pg.colormap.get('turbo')):
         super().__init__()     
         self.setBackgroundColor(255, 255, 255)
         self.cm = cm
@@ -131,6 +131,8 @@ class Visualizer3D(gl.GLViewWidget):
         self.plot_item = gl.GLSurfacePlotItem(np.zeros(10), np.zeros(10), np.zeros((10, 10)))
         self.addItem(self.plot_item)
         self.graph_parameter_lock = threading.Lock()
+        self.eeg_processor_lock = threading.Lock()
+        self.eeg_processor = eeg_processor
         self.initialize(g.DEFAULT_FFT_SAMPLES, g.DEFAULT_SECONDS_SHOWN_IN_SPECTROGRAM)
         self.setCameraPosition(pos=QtGui.QVector3D(0, 0, 5), distance=40, elevation=7, azimuth=0)
         self.scale_factor_x = 1
@@ -167,7 +169,7 @@ class Visualizer3D(gl.GLViewWidget):
         self.processor_thread.start()
 
     def init_frequencies(self):
-        sampling_rate = g.eeg_processor.stream.nominal_srate()
+        sampling_rate = self.eeg_processor.stream.nominal_srate()
         frequencies = fft.calculate_frequencies(self.fft_buffer_len, sampling_rate)
 
         #we dont want the offset a 0 Hz included, so we will cut off every frequency below 1 Hz
@@ -191,12 +193,15 @@ class Visualizer3D(gl.GLViewWidget):
         loading = False
 
         while(not self.thread_end_event.is_set()):
-            if g.eeg_processor is None:
+            self.eeg_processor_lock.acquire()
+
+            if self.eeg_processor is None:
+                self.eeg_processor_lock.release()
                 time.sleep(g.GRAPH_UPDATE_PAUSE_S)
                 continue
             
-
-            data = g.eeg_processor.get_eeg_data_as_chunk()
+            data = self.eeg_processor.get_eeg_data_as_chunk()
+            self.eeg_processor_lock.release()
 
             if data == None:
                 time.sleep(g.GRAPH_UPDATE_PAUSE_S)
@@ -246,6 +251,14 @@ class Visualizer3D(gl.GLViewWidget):
         self.seconds_shown = seconds_shown
         self.init_frequencies()
         self.graph_parameter_lock.release()
+
+
+    def set_eeg_processor(self, eeg_processor):
+        print("setting eeg processor")
+        self.eeg_processor_lock.acquire()
+        self.eeg_processor = eeg_processor
+        self.initialize(self.fft_buffer_len, self.seconds_shown)
+        self.eeg_processor_lock.release()
 
     #disable all interaction mechanisms by overriding the corresponding functions
         

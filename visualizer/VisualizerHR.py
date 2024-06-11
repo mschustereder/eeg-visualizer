@@ -19,7 +19,7 @@ class VisualizerHR(pg.PlotWidget):
 
     update_graph_signal = QtCore.Signal()
 
-    def __init__(self, parent=None, background='default', plotItem=None, **kargs):
+    def __init__(self, hr_processor, parent=None, background='default', plotItem=None, **kargs):
         super().__init__(parent, background, plotItem, **kargs)
         self.showGrid(x = True, y = True)
         self.setBackground((255, 255, 255))
@@ -31,7 +31,10 @@ class VisualizerHR(pg.PlotWidget):
         self.set_bio_variable(HR_BIO_VARIABLE.BPM)
         #time axis label
         self.setLabel('bottom', 'Time', units ='s')
+        self.hr_processor_lock = threading.Lock()
+        self.hr_processor = hr_processor
 
+        self.graph_parameter_lock = threading.Lock()
         self.thread_end_event = threading.Event()
         self.update_graph_signal.connect(self.update_graph_from_thread)
         self.processor_thread = threading.Thread(target=self.processor_thread_func)
@@ -42,12 +45,19 @@ class VisualizerHR(pg.PlotWidget):
     
     def processor_thread_func(self):
         while(not self.thread_end_event.is_set()):
+            
+            self.hr_processor_lock.acquire()
 
             if g.hr_processor == None:
                 time.sleep(g.GRAPH_UPDATE_PAUSE_S)
                 return
 
             bpm, rmssd, sdnn, poi_rat = g.hr_processor.get_all_bio_vars()
+
+            self.hr_processor_lock.release()
+
+            self.graph_parameter_lock.acquire()
+
             timestamp = time.time() - self.graph_start_time
             if bpm is not None:
                 bpm = bpm[0][0]
@@ -67,6 +77,7 @@ class VisualizerHR(pg.PlotWidget):
             self._set_y_range(self.data.sdnn_values, self.data.sdnn_settings)
             self._set_y_range(self.data.poi_rat_values, self.data.poi_rat_settings)
 
+            self.graph_parameter_lock.release()
             self.update_graph_signal.emit()
 
             self.plotting_done_cond.acquire()
@@ -96,6 +107,13 @@ class VisualizerHR(pg.PlotWidget):
 
         return range_x
     
+    def set_hr_processor(self, hr_processor):
+        print("setting hr processor")
+        self.hr_processor_lock.acquire()
+        self.hr_processor = hr_processor
+        self.data = HRGraphFrame()
+        self.graph_start_time = time.time()
+        self.hr_processor_lock.release()
 
     def set_bio_variable(self, bio_variable : HR_BIO_VARIABLE):
         self.bio_variable = bio_variable
@@ -148,6 +166,8 @@ class VisualizerHR(pg.PlotWidget):
         value_buffer = None
         timestamp_buffer = None
         settings = None
+
+        self.graph_parameter_lock.acquire()
             
         if self.bio_variable == HR_BIO_VARIABLE.BPM:
             value_buffer = self.data.bpm_values
@@ -171,6 +191,8 @@ class VisualizerHR(pg.PlotWidget):
         self.setXRange(*self.get_x_time_range(timestamp_buffer))
         self.setYRange(0, settings.max)
         self.line_plot.setData(timestamp_buffer, value_buffer)
+
+        self.graph_parameter_lock.release()
 
         self.plotting_done_cond.acquire()
         self.plotting_done = True

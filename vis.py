@@ -26,13 +26,11 @@ if __name__ == "__main__":
     window3 = QMainWindow()
     bar = Visualizer3DColorBar()
     window3.setCentralWidget(bar)
-    vis = Visualizer3D(bar)
-    vis2 = VisualizerHR()
+    vis = Visualizer3D(gl.eeg_processor, bar)
+    vis2 = VisualizerHR(gl.hr_processor)
     window.setCentralWidget(vis)
     window.show()
- 
-    window2 = QMainWindow()
-    vis2 = VisualizerHR()
+
     window2.setCentralWidget(vis2)
     window2.show()
     window3.show()
