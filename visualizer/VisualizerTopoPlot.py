@@ -6,32 +6,32 @@ from PyQt5.QtWidgets import QApplication, QMainWindow, QVBoxLayout, QWidget
 from signalProcessor.EEGProcessor import *
 from lslHandler.lslHandler import LslHandler
 from signalProcessor.EEGProcessor import EEGProcessor
+import visualizer.globals as g
 
-N_SAMPLES = 100
+
+N_SAMPLES = 1024
 S_FREQU = 500
 
 
-class PlotCanvas(FigureCanvas):
+class VisualizerTopoPlot(FigureCanvas):
     def __init__(self, parent=None):
-        self.connect()
+        self.eegprocessor = g.eeg_processor
         first_data = self.get_initial_data()
         self.data = first_data
         self.set_montage(first_data)
         mean_ch = np.mean(np.array(first_data), axis=0) 
-
+        self.filter = Filter.NoNe
+        
 
         self.fig, self.ax = plt.subplots()
-        super(PlotCanvas, self).__init__(self.fig)
+        super(VisualizerTopoPlot, self).__init__(self.fig)
         self.setParent(parent)
         self.ax.set_title('Dynamic Plot')
 
         im, cn = mne.viz.plot_topomap(mean_ch, self.raw.info,axes=self.ax ,show=False)
         plt.colorbar(im, ax=self.ax)
-        
-        # self.x = np.linspace(0, 10, 100)
-        # self.line, = self.ax.plot(self.x, np.sin(self.x))
-        
-        self.timer = self.fig.canvas.new_timer(interval=1)  # Update every 50 ms
+                
+        self.timer = self.fig.canvas.new_timer(interval=g.EEG_GRAPH_INTERVAL_MS)  # Update every 50 ms
         self.timer.add_callback(self.update_plot)
         self.timer.start()
     
@@ -41,7 +41,7 @@ class PlotCanvas(FigureCanvas):
         self.data = self.data[len(new_data):]
         self.data += new_data
         
-        filtered_data = self.eegprocessor.filter_eeg_data(self.data, Filter.Alpha)
+        filtered_data = self.eegprocessor.filter_eeg_data(self.data, self.filter)
         # filtered_data = self.data
         mean_ch = np.mean(np.array(filtered_data), axis=0) 
 
@@ -50,18 +50,6 @@ class PlotCanvas(FigureCanvas):
 
         self.ax.figure.canvas.draw()
         self.ax.figure.canvas.flush_events()
-
-    def connect(self):
-        #USE THIS TO USE LSLSTEAM
-        lslhandler = LslHandler()
-        all_streams = lslhandler.get_all_lsl_streams()
-        print(lslhandler.get_all_lsl_streams_as_infostring())
-        assert len(all_streams) != 0
-        for stream_index in range(len(all_streams)):
-            lslhandler.connect_to_specific_lsl_stream(all_streams[stream_index])
-            lslhandler.start_data_recording_thread(all_streams[stream_index])
-
-        self.eegprocessor = EEGProcessor(lslhandler, lslhandler.get_stream_by_name("BrainVision RDA"))
 
     def get_initial_data(self):
         data = []
@@ -111,12 +99,19 @@ class App(QMainWindow):
         self.setCentralWidget(central_widget)
         
         layout = QVBoxLayout(central_widget)
-        self.plot_canvas = PlotCanvas(central_widget)
+        self.plot_canvas = VisualizerTopoPlot(central_widget)
         layout.addWidget(self.plot_canvas)
         
         self.show()
 
 if __name__ == '__main__':
+    streams = g.lsl_handler.get_all_lsl_streams()
+    print([stream.name() for stream in streams])
+    for stream in streams:
+        g.lsl_handler.connect_to_specific_lsl_stream(stream)
+        g.lsl_handler.start_data_recording_thread(stream)
+
+    g.eeg_processor = EEGProcessor(g.lsl_handler, g.lsl_handler.get_stream_by_name("BrainVision RDA"))
     app = QApplication(sys.argv)
     main_app = App()
     sys.exit(app.exec_())

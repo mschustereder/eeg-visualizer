@@ -4,6 +4,7 @@ from hrvanalysis import get_time_domain_features, get_poincare_plot_features
 from hrvanalysis.preprocessing import interpolate_nan_values, remove_ectopic_beats
 import numpy as np
 from collections import deque
+from visualizer.VisualizerHR import HR_BIO_VARIABLE
 
 #Code with (ref) taken from https://github.com/abcsds/hrv/blob/main/src/09b_plot_hrv.py - Author: Luis Alberto Barradas Chacón
 
@@ -16,16 +17,17 @@ rr_data_buffer = deque([average_rr] * MAX_DATA_POINTS, maxlen=MAX_DATA_POINTS)
 
 
 class HRProcessor:
-    def __init__(self, lslhandler: LslHandler, hr_stream : StreamInfo, rr_stream : StreamInfo):
+    def __init__(self, lslhandler: LslHandler, hr_stream : StreamInfo, rr_stream : StreamInfo, storage_size: int):
         self.lslhandler = lslhandler
         self.hr_stream = hr_stream
         self.rr_stream = rr_stream
+
 
     lslhandler : LslHandler
     hr_stream : StreamInfo
     rr_stream : StreamInfo
 
-    def get_bpm_data(self):
+    def get_bpm(self):
         return self.lslhandler.get_data_sample(self.hr_stream)
         
     def _get_rr_intervals(self):
@@ -42,26 +44,27 @@ class HRProcessor:
             return rr_intervals
         return None
     
-    def get_rmssd_data(self):
-        rr_intervals = self._get_rr_intervals()
-        if rr_intervals != None:
-            time_feats = get_time_domain_features(nn_intervals=rr_intervals)
-            return time_feats['rmssd']
-        return None
+    def get_rmssd(self, rr_intervals):
+       if not rr_intervals: return None
+       time_feats = get_time_domain_features(nn_intervals=rr_intervals)
+       return time_feats['rmssd']
 
-    def get_sdnn_data(self):
-        rr_intervals = self._get_rr_intervals()
-        if rr_intervals != None:
-            time_feats = get_time_domain_features(nn_intervals=rr_intervals)
-            return time_feats['sdnn']
-        return None
+    def get_sdnn(self, rr_intervals):
+        if not rr_intervals: return None
+        time_feats = get_time_domain_features(nn_intervals=rr_intervals)
+        return time_feats['sdnn']
     
-    def get_poincare_ratio(self):
+    def get_poincare(self, rr_intervals):
+        if not rr_intervals: return None
+        poincare_feats = get_poincare_plot_features(nn_intervals=rr_intervals)
+        return poincare_feats['ratio_sd2_sd1']
+
+    
+    def get_all_bio_vars(self):
         rr_intervals = self._get_rr_intervals()
-        if rr_intervals != None:
-            poincare_feats = get_poincare_plot_features(nn_intervals=rr_intervals)
-            return poincare_feats['ratio_sd2_sd1']
-        return None
+        return self.get_bpm(), self.get_rmssd(rr_intervals), self.get_sdnn(rr_intervals), self.get_poincare(rr_intervals)
+
+
     
 
 

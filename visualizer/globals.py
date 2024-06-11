@@ -17,6 +17,8 @@ HR_GRAPH_TIME_RANGE_SEC = 45
 HR_GRAPH_Y_UP_SCALE_THRESHOLD = 60
 HR_GRAPH_Y_UP_SCALE_FACTOR = 0.95
 
+MAX_HR_DATA_SAMPLES =100
+
 # NOTE: usually it is forbidden to use global variables with Dash, 
 # but due to the simple fact that dcc.storage is way too slow we will use it anyways
 # the requirements for it to work is that dash is run with only 1 woker and 1 user at a time
