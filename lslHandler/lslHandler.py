@@ -9,7 +9,7 @@ from datetime import datetime
 import time
 import numpy as np
 
-SAMPLE_COUNT_MAX_QUEUE = 1000
+SAMPLE_COUNT_MAX_QUEUE = 1024
 
 # @dataclass
 # class DataQueueStruct:

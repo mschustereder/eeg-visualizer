@@ -11,25 +11,30 @@ import visualizer.globals as g
 
 N_SAMPLES = 1024
 S_FREQU = 500
-
+AMOUNT_OF_CHANNELS_TO_USE = 28
 
 class VisualizerTopoPlot(FigureCanvas):
     def __init__(self, parent=None):
         self.eegprocessor = g.eeg_processor
-        first_data = self.get_initial_data()
+        first_data = g.eeg_processor.get_specific_amount_of_eeg_samples_without_timestamps(N_SAMPLES)
+        first_data = [liste[:AMOUNT_OF_CHANNELS_TO_USE] for liste in first_data] #THIS IS ONLY NECESSARY FOR THE TEST XDF FILE-REMOVE AFER TEST PHASE
         self.data = first_data
+        self.channel_names = g.eeg_processor.get_eeg_layout()[:AMOUNT_OF_CHANNELS_TO_USE]
         self.set_montage(first_data)
-        mean_ch = np.mean(np.array(first_data), axis=0) 
         self.filter = Filter.NoNe
         
-
         self.fig, self.ax = plt.subplots()
         super(VisualizerTopoPlot, self).__init__(self.fig)
         self.setParent(parent)
-        self.ax.set_title('Dynamic Plot')
+
+
+        filtered_data = self.eegprocessor.filter_eeg_data(self.data, self.filter)
+        mean_ch = np.mean(np.array(filtered_data), axis=0) 
+        # mean_ch = np.mean(np.array(self.data), axis=0) 
 
         im, cn = mne.viz.plot_topomap(mean_ch, self.raw.info,axes=self.ax ,show=False)
-        plt.colorbar(im, ax=self.ax)
+        cbar = self.fig.colorbar(im, ax=self.ax)
+        cbar.set_label("µV")
                 
         self.timer = self.fig.canvas.new_timer(interval=g.EEG_GRAPH_INTERVAL_MS)  # Update every 50 ms
         self.timer.add_callback(self.update_plot)
@@ -38,36 +43,22 @@ class VisualizerTopoPlot(FigureCanvas):
     eegprocessor : EEGProcessor
 
     def update_plot(self):
-        new_data = self.get_data()
+        new_data = g.eeg_processor.get_available_eeg_data_without_timestamps()
+        new_data = [liste[:AMOUNT_OF_CHANNELS_TO_USE] for liste in new_data] #THIS IS ONLY NECESSARY FOR THE TEST XDF FILE-REMOVE AFER TEST PHASE
         self.data = self.data[len(new_data):]
         self.data += new_data
         
-        filtered_data = self.eegprocessor.filter_eeg_data_from_list(self.data, self.filter)
+        filtered_data = self.eegprocessor.filter_eeg_data(self.data, self.filter)
         mean_ch = np.mean(np.array(filtered_data), axis=0) 
+        # mean_ch = np.mean(np.array(self.data), axis=0)
 
         self.ax.clear()
         im, cn = mne.viz.plot_topomap(mean_ch, self.raw.info,axes=self.ax ,show=False)
-
+       
         self.ax.figure.canvas.draw()
         self.ax.figure.canvas.flush_events()
 
-    def get_initial_data(self):
-        data = []
-        while len(data) < N_SAMPLES:
-            if(data_sample := self.eegprocessor.get_eeg_data_dict()) != None:
-                self.channel_names = list(data_sample[0].keys())[:-10]
-                data.append(list(data_sample[0].values())[:-10])
-        return data
-    
-    def get_data(self):
-        new_data = []
-
-        if(new_chunk := self.eegprocessor.get_eeg_data_as_chunk(N_SAMPLES)) != None:
-            new_data = [list(arr[0].values())[:-10] for arr in new_chunk]
-        else: return None
-
-        return new_data
-    
+   
         
     def set_montage(self, data):
         biosemi_montage = mne.channels.make_standard_montage('biosemi64')  # set a montage, see mne document
