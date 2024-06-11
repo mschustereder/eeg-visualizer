@@ -130,6 +130,7 @@ class Visualizer3D(gl.GLViewWidget):
             self.color_bar.set_color_map(cm)
         self.plot_item = gl.GLSurfacePlotItem(np.zeros(10), np.zeros(10), np.zeros((10, 10)))
         self.addItem(self.plot_item)
+        self.graph_parameter_lock = threading.Lock()
         self.initialize(g.DEFAULT_FFT_SAMPLES, g.DEFAULT_SECONDS_SHOWN_IN_SPECTROGRAM)
         self.setCameraPosition(pos=QtGui.QVector3D(0, 0, 5), distance=40, elevation=7, azimuth=0)
         self.scale_factor_x = 1
@@ -200,8 +201,8 @@ class Visualizer3D(gl.GLViewWidget):
             if data == None:
                 time.sleep(g.GRAPH_UPDATE_PAUSE_S)
                 continue
-
-            #g.eeg_processor.filter_eeg_data(list(sample[0].values()), )
+            
+            self.graph_parameter_lock.acquire()
             
             for sample in data:
                 self.data.fft_values_buffer.append(mean(list(sample[0].values())))
@@ -222,12 +223,13 @@ class Visualizer3D(gl.GLViewWidget):
                 self.scale_z()
                 self.data.colors = self.cm.map(self.data.fft_vizualizer_values, pg.ColorMap.FLOAT)
                 self.update_spectrum_signal.emit()
-                
+                self.graph_parameter_lock.release()
                 self.plotting_done_cond.acquire()
                 while self.plotting_done == False:
                     self.plotting_done_cond.wait()
                 self.plotting_done_cond.release()
             else:
+                self.graph_parameter_lock.release()
                 if loading == False:
                     self.loading_buffer_start_signal.emit()
                     print("loading start")
@@ -236,12 +238,14 @@ class Visualizer3D(gl.GLViewWidget):
             time.sleep(g.GRAPH_UPDATE_PAUSE_S)
 
     def initialize(self, fft_buffer_len, seconds_shown):
+        self.graph_parameter_lock.acquire()
         self.max = 0
         self.below_max_count = 0
         self.data = EEGGraphFrame()
         self.fft_buffer_len = fft_buffer_len
         self.seconds_shown = seconds_shown
         self.init_frequencies()
+        self.graph_parameter_lock.release()
 
     #disable all interaction mechanisms by overriding the corresponding functions
         
@@ -317,17 +321,24 @@ class Visualizer3D(gl.GLViewWidget):
                 self.data.fft_timestamps = self.data.fft_timestamps[cut_time_index:]
 
     def update_spectrum_from_thread(self):
+        self.graph_parameter_lock.acquire()
         x = np.array(self.data.fft_timestamps)
         y = np.array(self.data.frequencies)
         z = np.array(self.data.fft_vizualizer_values)
 
-        if self.do_z_scale:
-            self.plot_item.scale(1, 1, self.current_z_scale_factor)
-            if self.color_bar is not None:
-                self.color_bar.update_values([0, self.max])
-            self.do_z_scale = False
+        if len(self.data.fft_vizualizer_values) != 0:
+            if self.do_z_scale:
+                self.plot_item.scale(1, 1, self.current_z_scale_factor)
+                if self.color_bar is not None:
+                    self.color_bar.update_values([0, self.max])
+                self.do_z_scale = False
 
-        self.plot_item.setData(x, y, z, self.data.colors)
+            self.plot_item.setData(x, y, z, self.data.colors)
+            self.graph_parameter_lock.release()
+
+        else:
+            print("buffer empty, update spectrum was called right after change of parameters")
+            self.graph_parameter_lock.release()
 
         self.plotting_done_cond.acquire()
         self.plotting_done = True
