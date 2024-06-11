@@ -122,7 +122,8 @@ class Visualizer3D(gl.GLViewWidget):
         self.setBackgroundColor(255, 255, 255)
         self.cm = cm
         self.color_bar = color_bar
-        self.color_bar.set_color_map(cm)
+        if self.color_bar is not None:
+            self.color_bar.set_color_map(cm)
         self.plot_item = gl.GLSurfacePlotItem(np.zeros(10), np.zeros(10), np.zeros((10, 10)))
         self.addItem(self.plot_item)
         self.initialize(g.DEFAULT_FFT_SAMPLES, g.DEFAULT_SECONDS_SHOWN_IN_SPECTROGRAM)
