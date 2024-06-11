@@ -138,8 +138,7 @@ class Visualizer3D(gl.GLViewWidget):
         self.scale_factor_x = 1
         self.scale_factor_y = 1
         self.scale_factor_z = 1
-        self.current_z_scale_factor = 1
-        self.do_z_scale = False
+        self.z_was_scaled = False
 
         self.resized.connect(self.on_resized)
 
@@ -244,11 +243,12 @@ class Visualizer3D(gl.GLViewWidget):
 
     def initialize(self, fft_buffer_len, seconds_shown):
         self.graph_parameter_lock.acquire()
-        self.max = 0
+        self.max_value = 0
         self.below_max_count = 0
         self.data = EEGGraphFrame()
         self.fft_buffer_len = fft_buffer_len
         self.seconds_shown = seconds_shown
+        self.z_was_scaled = False #not doing this causes wrong scaling when initialize is called during operation
         self.init_frequencies()
         self.graph_parameter_lock.release()
 
@@ -291,28 +291,27 @@ class Visualizer3D(gl.GLViewWidget):
     
     def scale_z(self):
         #scale z axis
-        old_max = self.max
+        old_max = self.max_value
         max_val = np.amax(self.data.fft_vizualizer_values)
 
-        if max_val >= self.max:
+        if max_val >= self.max_value:
             self.below_max_count = 0
-            self.max = max_val
+            self.max_value = max_val
         else:
             self.below_max_count +=1
 
         #only scale up after enough time has passed
         if (self.below_max_count > g.EEG_GRAPH_Z_UP_SCALE_THRESHOLD):
-            self.max *= g.EEG_GRAPH_Z_UP_SCALE_FACTOR
+            self.max_value *= g.EEG_GRAPH_Z_UP_SCALE_FACTOR
             print("scale up")
 
-        if old_max == self.max:
+        if old_max == self.max_value:
             return
+        
 
-        shown_max = self.max*self.scale_factor_z
-        self.current_z_scale_factor = self.z_range/shown_max
-        if self.current_z_scale_factor != 1:
-            self.scale_factor_z = self.scale_factor_z*self.current_z_scale_factor
-            self.do_z_scale = True
+        self.scale_factor_z = self.z_range/self.max_value
+        if self.scale_factor_z != 1:
+            self.z_was_scaled = True
 
 
     def prepare_data_for_plotting(self, fft_magnitude_normalized, sample_time):
@@ -337,14 +336,13 @@ class Visualizer3D(gl.GLViewWidget):
         self.graph_parameter_lock.acquire()
         x = np.array(self.data.fft_timestamps)
         y = np.array(self.data.frequencies)
-        z = np.array(self.data.fft_vizualizer_values)
+        z = np.array(self.data.fft_vizualizer_values)*self.scale_factor_z
 
         if len(self.data.fft_vizualizer_values) != 0:
-            if self.do_z_scale:
-                self.plot_item.scale(1, 1, self.current_z_scale_factor)
+            if self.z_was_scaled:
                 if self.color_bar is not None:
-                    self.color_bar.update_values([0, self.max])
-                self.do_z_scale = False
+                    self.color_bar.update_values([0, self.max_value])
+                self.z_was_scaled = False
 
             self.plot_item.setData(x, y, z, self.data.colors)
             self.graph_parameter_lock.release()
