@@ -16,10 +16,9 @@ class DataQueueStruct:
     data_queue_lock : threading.Lock = field(default_factory=threading.Lock)
     queue_length : int = 0
 
-
 class LslHandler:
     def __init__(self):
-        pass
+        self._stop_event = threading.Event()
 
     active_streams = {}
 
@@ -33,11 +32,9 @@ class LslHandler:
             info_string_list.append(string_of_list)
 
         return info_string_list
-
     def data_recording_thread(self, stream : StreamInfo):
         queue = self.active_streams[stream][1]
-
-        while True: 
+        while not self._stop_event.is_set(): 
                 with queue.data_queue_lock:
                     data, timestamps = self.active_streams[stream][0].pull_chunk(timeout=0.0, max_samples = 10000)
                     data_with_timestamps = []
@@ -62,7 +59,8 @@ class LslHandler:
     
     def start_data_recording_thread(self, stream: StreamInfo):
         assert stream in self.active_streams
-        threading.Thread(target=self.data_recording_thread, args=(stream,)).start()
+        self.data_thread = threading.Thread(target=self.data_recording_thread, args=(stream,))
+        self.data_thread.start()
 
     def get_data_sample(self, stream: StreamInfo):
         queue = self.active_streams[stream][1]
@@ -93,6 +91,12 @@ class LslHandler:
             
         return None
     
-    def get_inlet(self,stream : StreamInfo):
+    def get_inlet(self,stream : StreamInfo) -> StreamInlet:
         return self.active_streams[stream][0]
+    
+    def disconnect_and_stop_recording_thread(self, stream : StreamInfo):
+        self._stop_event.set()
+        self.data_thread.join()
+        self.get_inlet(stream).close_stream()
+        del self.active_streams[stream]
     
