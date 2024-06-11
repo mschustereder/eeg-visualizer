@@ -31,7 +31,7 @@ class VisualizerTopoPlot(FigureCanvas):
         im, cn = mne.viz.plot_topomap(mean_ch, self.raw.info,axes=self.ax ,show=False)
         plt.colorbar(im, ax=self.ax)
                 
-        self.timer = self.fig.canvas.new_timer(interval=g.EEG_GRAPH_INTERVAL_MS)  # Update every 50 ms
+        self.timer = self.fig.canvas.new_timer(interval=g.EEG_GRAPH_INTERVAL_S)  # Update every 50 ms
         self.timer.add_callback(self.update_plot)
         self.timer.start()
     

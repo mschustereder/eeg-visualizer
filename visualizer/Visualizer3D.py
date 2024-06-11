@@ -1,13 +1,15 @@
 import pyqtgraph.opengl as gl
 import pyqtgraph as pg
 from OpenGL.GL import *
-from PySide6 import QtGui
+from PySide6 import QtGui, QtCore
 import numpy as np
 from signalProcessor import fft
 import visualizer.globals as g
 from statistics import mean
 from visualizer.EEGGraphFrame import EEGGraphFrame
 from visualizer.Visualizer3DColorBar import Visualizer3DColorBar
+import threading
+import time
 
 
 class CustomAxis(gl.GLAxisItem):
@@ -107,17 +109,17 @@ class YAxis():
 
 
 
-
 class Visualizer3D(gl.GLViewWidget):
     grid_size = 200
     grid_space = 5
+    update_spectrum_signal = QtCore.Signal()
 
     #the values for x, y and z than can be seen from the camera
     x_range = 48
     y_range = 40
     z_range = 10
     
-    def __init__(self, color_bar : Visualizer3DColorBar= None, cm = pg.colormap.get('turbo')):
+    def __init__(self, app, color_bar : Visualizer3DColorBar= None, cm = pg.colormap.get('turbo')):
         super().__init__()     
         self.setBackgroundColor(255, 255, 255)
         self.cm = cm
@@ -131,6 +133,9 @@ class Visualizer3D(gl.GLViewWidget):
         self.scale_factor_x = 1
         self.scale_factor_y = 1
         self.scale_factor_z = 1
+        self.current_z_scale_factor = 1
+        self.do_z_scale = False
+        self.app = app
 
         self.resized.connect(self.on_resized)
 
@@ -145,7 +150,6 @@ class Visualizer3D(gl.GLViewWidget):
         scale_x = 9.5
         if scale_x != 1:
             self.scale_factor_x = self.scale_factor_x*scale_x
-            print(self.scale_factor_x)
             self.plot_item.scale(scale_x, 1, 1)
         
         self.plot_item.translate(0, (-frequency_range/2 - g.FREQUENCY_MIN)*self.scale_factor_y, 0)
@@ -153,6 +157,12 @@ class Visualizer3D(gl.GLViewWidget):
         self.frequency_ticks = YAxis(self, "Frequency (Hz)")
         self.frequency_ticks.add_ticks(list(range(0, g.FREQUENCY_MAX+5, 5)), self.scale_factor_y, (-frequency_range/2 - g.FREQUENCY_MIN), -500)
 
+
+        self.update_spectrum_signal.connect(self.update_spectrum_from_thread)
+        self.processor_thread = threading.Thread(target=self.processor_thread_func)
+        self.plotting_done_cond = threading.Condition()
+        self.plotting_done = False
+        self.processor_thread.start()
 
     def init_frequencies(self):
         sampling_rate = g.eeg_processor.stream.nominal_srate()
@@ -174,6 +184,39 @@ class Visualizer3D(gl.GLViewWidget):
 
         self.data.frequencies = frequencies[self.frequency_cut_index_bottom:self.frequency_cut_index_top]
 
+    def processor_thread_func(self):
+        while(True):
+            if g.eeg_processor is None:
+                time.sleep(g.EEG_GRAPH_INTERVAL_S)
+                continue
+            
+
+            data = g.eeg_processor.get_eeg_data_as_chunk()
+
+            if data == None:
+                time.sleep(g.EEG_GRAPH_INTERVAL_S)
+                continue
+            
+            for sample in data:
+                self.data.fft_values_buffer.append(mean(list(sample[0].values())))
+
+            #only update graph if accumulated data is FFT_SAMPLES samples long
+            if len(self.data.fft_values_buffer) >= self.fft_buffer_len:
+                #we want to get a spectrum every 100ms, so we will calulate overlapping fft windows, and thus use the fft_values_buffer as a FIFO buffer
+                self.data.fft_values_buffer = self.data.fft_values_buffer[-self.fft_buffer_len:] 
+                sample_time = data[-1][1] - data[0][1] #this is the time that has passed in the sample world
+                fft_magnitude_normalized = fft.calculate_fft(self.data.fft_values_buffer)
+                self.prepare_data_for_plotting(fft_magnitude_normalized, sample_time)
+                self.scale_z()
+                self.data.colors = self.cm.map(self.data.fft_vizualizer_values, pg.ColorMap.FLOAT)
+                self.update_spectrum_signal.emit()
+                
+                self.plotting_done_cond.acquire()
+                while self.plotting_done == False:
+                    self.plotting_done_cond.wait()
+                self.plotting_done_cond.release()
+
+            time.sleep(g.EEG_GRAPH_INTERVAL_S)
 
     def initialize(self, fft_buffer_len, seconds_shown):
         self.max = 0
@@ -211,17 +254,6 @@ class Visualizer3D(gl.GLViewWidget):
     def set_seconds_shown(self, seconds_shown):
         print("set seconds shown")
         self.initialize(self.fft_buffer_len, seconds_shown)
-
-    def __get_colors(self, values, max_val):
-        colors=[]
-        for row in values:
-            color_row = []      
-            for value in row:
-                percentage = value/max_val
-                color = self.cm[percentage]
-                color_row.append([color.redF(), color.greenF(), color.blueF()])
-            colors.append(color_row)
-        return colors
     
     def scale_z(self):
         #scale z axis
@@ -243,13 +275,11 @@ class Visualizer3D(gl.GLViewWidget):
             return
 
         shown_max = self.max*self.scale_factor_z
-        scale_z = self.z_range/shown_max
-        if scale_z != 1:
-            self.scale_factor_z = self.scale_factor_z*scale_z
-            self.plot_item.scale(1, 1, scale_z)
+        self.current_z_scale_factor = self.z_range/shown_max
+        if self.current_z_scale_factor != 1:
+            self.scale_factor_z = self.scale_factor_z*self.current_z_scale_factor
+            self.do_z_scale = True
 
-        if self.color_bar is not None:
-            self.color_bar.update_values([0, self.max])
 
     def prepare_data_for_plotting(self, fft_magnitude_normalized, sample_time):
             #cut away frequencies we don´t need
@@ -269,31 +299,23 @@ class Visualizer3D(gl.GLViewWidget):
                 self.data.fft_vizualizer_values = self.data.fft_vizualizer_values[cut_time_index:]
                 self.data.fft_timestamps = self.data.fft_timestamps[cut_time_index:]
 
-    def update_spectrum(self):
-        data = g.eeg_processor.get_eeg_data_as_chunk()
+    def update_spectrum_from_thread(self):
+        x = np.array(self.data.fft_timestamps)
+        y = np.array(self.data.frequencies)
+        z = np.array(self.data.fft_vizualizer_values)
 
-        if data == None:
-            return
-        
-        for sample in data:
-            self.data.fft_values_buffer.append(mean(list(sample[0].values())))
+        if self.do_z_scale:
+            self.plot_item.scale(1, 1, self.current_z_scale_factor)
+            if self.color_bar is not None:
+                self.color_bar.update_values([0, self.max])
+            self.do_z_scale = False
 
-        #only update graph if accumulated data is FFT_SAMPLES samples long
-        if len(self.data.fft_values_buffer) >= self.fft_buffer_len:
-            self.plot_item.show()
-            #we want to get a spectrum every 100ms, so we will calulate overlapping fft windows, and thus use the fft_values_buffer as a FIFO buffer
-            self.data.fft_values_buffer = self.data.fft_values_buffer[-self.fft_buffer_len:] 
-            sample_time = data[-1][1] - data[0][1] #this is the time that has passed in the sample world
-            fft_magnitude_normalized = fft.calculate_fft(self.data.fft_values_buffer)
-            self.prepare_data_for_plotting(fft_magnitude_normalized, sample_time)
-            self.scale_z()
-            x = np.array(self.data.fft_timestamps)
-            y = np.array(self.data.frequencies)
-            z = np.array(self.data.fft_vizualizer_values)
-            colors = np.array(self.__get_colors(z, self.max))
-            self.plot_item.setData(x, y, z, colors = colors)
-        else:
-            self.plot_item.hide()
+        self.plot_item.setData(x, y, z, self.data.colors)
+
+        self.plotting_done_cond.acquire()
+        self.plotting_done = True
+        self.plotting_done_cond.notify()
+        self.plotting_done_cond.release()
 
     def on_resized(self, evt=None):
         self.frequency_ticks.set_fontsizes_from_pixel_size(self.pixelSize(QtGui.QVector3D(0, 0, 0)))

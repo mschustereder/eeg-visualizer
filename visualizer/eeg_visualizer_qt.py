@@ -184,7 +184,7 @@ class EegVisualizerMainWindow(QMainWindow):
         timer = QtCore.QTimer(timer)
         timer.timeout.connect(visualizer_3d.update_spectrum)
         timer.timeout.connect(visualizer_hr.update_graph)
-        timer.setInterval(gl.EEG_GRAPH_INTERVAL_MS)
+        timer.setInterval(gl.EEG_GRAPH_INTERVAL_S)
 
         timer.start()
 

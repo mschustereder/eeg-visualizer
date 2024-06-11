@@ -1,4 +1,5 @@
 from dataclasses import dataclass, field
+import numpy as np
 
 
 @dataclass
@@ -8,3 +9,4 @@ class EEGGraphFrame:
     frequencies : list[float] = field(default_factory=list)
     fft_vizualizer_values : list[list[float]] = field(default_factory=list)
     fft_timestamps : list[float] = field(default_factory=list)
+    colors : list[list[int]] = field(default_factory=list)

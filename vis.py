@@ -26,14 +26,13 @@ if __name__ == "__main__":
     window3 = QMainWindow()
     bar = Visualizer3DColorBar()
     window3.setCentralWidget(bar)
-    vis = Visualizer3D(bar)
+    vis = Visualizer3D(app, bar)
     vis2 = VisualizerHR()
     timer = QtCore.QTimer()
-    timer.setInterval(gl.EEG_GRAPH_INTERVAL_MS)
+    timer.setInterval(gl.EEG_GRAPH_INTERVAL_S)
     timer.start()
     window.setCentralWidget(vis)
     window.show()
-    timer.timeout.connect(vis.update_spectrum)
  
     window2 = QMainWindow()
     vis2 = VisualizerHR()
@@ -49,7 +48,6 @@ if __name__ == "__main__":
 #     vis_topo = VisualizerTopoPlot(central_widget)
 #     window3.setCentralWidget(vis_topo)
 #     window3.show()
-
 
 
 
