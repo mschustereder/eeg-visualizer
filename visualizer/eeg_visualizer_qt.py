@@ -67,8 +67,7 @@ class CardWidget(QFrame):
 def execute_qt_app():
     app = QApplication(sys.argv)
 
-    timer = QtCore.QTimer()
-    window = EegVisualizerMainWindow(timer)
+    window = EegVisualizerMainWindow()
 
     window.showMaximized()
 
@@ -81,7 +80,7 @@ class EegVisualizerMainWindow(QMainWindow):
         HR = 2
         RR = 3
 
-    def __init__(self, timer):
+    def __init__(self):
         super().__init__()
 
         self.setWindowTitle("EEG Visualizer")
@@ -89,8 +88,6 @@ class EegVisualizerMainWindow(QMainWindow):
         self.central_widget = QWidget()
         self.setCentralWidget(self.central_widget)
         self.central_layout = QVBoxLayout(self.central_widget)
-
-        self.timer = timer
 
         self.stream_selection_card = self.get_stream_selection_card()
 
@@ -151,9 +148,11 @@ class EegVisualizerMainWindow(QMainWindow):
     def show_main_layout(self):
         EegVisualizerMainWindow.connect_to_selected_streams(self.selected_eeg_stream, self.selected_hr_stream, self.selected_rr_stream)
 
-        self.central_layout.removeWidget(self.central_layout.itemAt(0).widget())
+        current_widget = self.central_layout.itemAt(0).widget()
+        current_widget.hide()
+        self.central_layout.removeWidget(current_widget)
 
-        self.visualizer_3d, self.visualizer_hr, self.visualizer_topo = EegVisualizerMainWindow.setup_timer_and_get_visualizers_3d_and_hr(self.timer)
+        self.visualizer_3d, self.visualizer_hr, self.visualizer_topo = EegVisualizerMainWindow.setup_visualizers_3d_and_hr()
 
         self.visualizer_3d.set_seconds_shown(DEFAULT_SECONDS_SHOWN)
 
@@ -162,7 +161,13 @@ class EegVisualizerMainWindow(QMainWindow):
         self.visualizer_3d.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
         self.visualizer_hr.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
 
-        layout.addWidget(self.visualizer_3d, 0, 0, 2, 2)
+        main_plot_container_widget = QWidget()
+        self.main_plot_container_layout = QVBoxLayout()
+
+        self.main_plot_container_layout.addWidget(self.visualizer_3d)
+        main_plot_container_widget.setLayout(self.main_plot_container_layout)
+
+        layout.addWidget(main_plot_container_widget, 0, 0, 2, 2)
         layout.addWidget(self.visualizer_hr, 2, 0, 1, 2)
         parameter_selection_container = self.get_parameter_selection()
         layout.addWidget(parameter_selection_container, 0, 2, 3, 1)
@@ -178,18 +183,12 @@ class EegVisualizerMainWindow(QMainWindow):
         container_widget.setLayout(layout)
 
         self.central_layout.addWidget(container_widget)
+        container_widget.show()
 
-    def setup_timer_and_get_visualizers_3d_and_hr(timer):
+    def setup_visualizers_3d_and_hr():
         visualizer_3d = Visualizer3D(gl.eeg_processor)
         visualizer_hr = VisualizerHR(gl.hr_processor)
         visualizer_topoplot = VisualizerTopoPlot()
-
-        # timer = QtCore.QTimer(timer)
-        # timer.timeout.connect(visualizer_3d.update_spectrum)
-        # timer.timeout.connect(visualizer_hr.update_graph)
-        # timer.setInterval(gl.EEG_GRAPH_INTERVAL_S)
-
-        # timer.start()
 
         return visualizer_3d, visualizer_hr, visualizer_topoplot
     
@@ -278,6 +277,8 @@ class EegVisualizerMainWindow(QMainWindow):
         plot_label.setStyleSheet("border: none;")
         plot_label.setMinimumWidth(HORIZONTAL_ROW_SPACER)
         form_layout.addRow(plot_label, main_plot_dropdown)
+
+        main_plot_dropdown.currentIndexChanged.connect(lambda index: self.update_main_plot(main_plot_dropdown.itemText(index)))
         
         frequency_band_dropdown = QComboBox()
         frequency_band_dropdown.addItems(['Delta','Theta' ,'Alpha', 'Beta', 'Gamma'])
@@ -332,6 +333,16 @@ class EegVisualizerMainWindow(QMainWindow):
         
         sub_plot_configuration = CardWidget("Sub Plot Configuration", content=form_container)
         return sub_plot_configuration
+    
+    def update_main_plot(self, plot_identifier):
+        widget_to_use_as_main_plot = self.visualizer_3d if plot_identifier == 'Spectrogram' else self.visualizer_topo
+
+        if self.main_plot_container_layout.count() > 0:
+            current_widget = self.main_plot_container_layout.itemAt(0).widget()
+            current_widget.hide()
+            self.main_plot_container_layout.removeWidget(current_widget)
+            self.main_plot_container_layout.addWidget(widget_to_use_as_main_plot)
+            widget_to_use_as_main_plot.show()
     
     def update_sub_plot(self, plot_identifier):
         if plot_identifier == 'BPM':
