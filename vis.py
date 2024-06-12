@@ -1,12 +1,12 @@
 import visualizer.globals as gl
-from visualizer.eeg_visualizer import *
-from signalProcessor.EEGProcessor import EEGProcessor, Filter
+from visualizer.eeg_visualizer_qt import *
+from signalProcessor.EEGProcessor import EEGProcessor
 from signalProcessor.HRProcessor import HRProcessor
 import sys
-from PySide6.QtWidgets import QApplication, QMainWindow, QWidget
-from visualizer.Visualizer3D import Visualizer3D
+from PySide6.QtWidgets import QApplication, QMainWindow
+from visualizer.Visualizer3D import Visualizer3D, Visualizer3DColorBar
 from visualizer.VisualizerHR import VisualizerHR
-from visualizer.VisualizerTopoPlot import VisualizerTopoPlot
+# from visualizer.VisualizerTopoPlot import VisualizerTopoPlot
 from PySide6 import QtCore
 
 
@@ -22,29 +22,30 @@ if __name__ == "__main__":
 
     app = QApplication(sys.argv)
     window = QMainWindow()
-    vis = Visualizer3D()
-    timer = QtCore.QTimer()
-    timer.setInterval(gl.EEG_GRAPH_INTERVAL_MS)
-    timer.start()
+    window2 = QMainWindow()
+    window3 = QMainWindow()
+    bar = Visualizer3DColorBar()
+    window3.setCentralWidget(bar)
+    vis = Visualizer3D(gl.eeg_processor, bar)
+    vis2 = VisualizerHR(gl.hr_processor)
     window.setCentralWidget(vis)
     window.show()
-    timer.timeout.connect(vis.update_spectrum)
- 
-    window2 = QMainWindow()
-    vis2 = VisualizerHR()
-    timer.timeout.connect(vis2.update_graph)
+
     window2.setCentralWidget(vis2)
     window2.show()
+    window3.show()
 
 
-## Visualizer for topoplot:
-    # window3 = QMainWindow()
-    # central_widget = QWidget()
-    # vis_topo = VisualizerTopoPlot(central_widget)
-    # window3.setCentralWidget(vis_topo)
-    # window3.show()
+# ## Visualizer for topoplot:
+#     window3 = QMainWindow()
+#     central_widget = QWidget()
+#     vis_topo = VisualizerTopoPlot(central_widget)
+#     window3.setCentralWidget(vis_topo)
+#     window3.show()
 
 
-
-
-    sys.exit(app.exec())
+    ret = app.exec()
+    vis.stop_and_wait_for_process_thread()
+    vis2.stop_and_wait_for_process_thread()
+    sys.exit(ret)
+    

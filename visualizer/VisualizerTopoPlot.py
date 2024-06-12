@@ -35,7 +35,7 @@ class VisualizerTopoPlot(FigureCanvas):
         cbar = self.fig.colorbar(im, ax=self.ax)
         cbar.set_label("µV")
                 
-        self.timer = self.fig.canvas.new_timer(interval=g.EEG_GRAPH_INTERVAL_MS)  # Update every 50 ms
+        self.timer = self.fig.canvas.new_timer(interval=g.GRAPH_UPDATE_PAUSE_S)  # Update every 50 ms
         self.timer.add_callback(self.update_plot)
         self.timer.start()
     
