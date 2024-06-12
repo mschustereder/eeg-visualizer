@@ -1,6 +1,6 @@
 from  lslHandler.lslHandler import LslHandler
 from signalProcessor.EEGProcessor import EEGProcessor
-
+from signalProcessor.HRProcessor import HRProcessor
 
 #CONSTANTS
 
@@ -28,6 +28,6 @@ lsl_handler = LslHandler()
 
 #global eeg processor object
 eeg_processor : EEGProcessor = None
-hr_processor = None
+hr_processor : HRProcessor = None
 
  

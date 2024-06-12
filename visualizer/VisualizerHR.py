@@ -59,8 +59,8 @@ class VisualizerHR(pg.PlotWidget):
             self.graph_parameter_lock.acquire()
 
             timestamp = time.time() - self.graph_start_time
-            if bpm is not None:
-                bpm = bpm[0][0]
+            # if bpm is not None:
+            #     bpm = bpm[0][0]
 
             self._add_data(timestamp, self.data.timestamps_bpm, bpm, self.data.bpm_values)
             self._add_data(timestamp, self.data.timestamps_rmssd, rmssd, self.data.rmssd_values)

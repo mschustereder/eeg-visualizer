@@ -4,11 +4,13 @@ from PySide6 import QtCore, QtGui
 import sys
 from PySide6.QtWidgets import QApplication
 from visualizer.Visualizer3D import Visualizer3D
+from visualizer.VisualizerTopoPlot import VisualizerTopoPlot
 from visualizer.VisualizerHR import VisualizerHR, HR_BIO_VARIABLE
 import visualizer.globals as gl
-from signalProcessor.EEGProcessor import EEGProcessor
+from signalProcessor.EEGProcessor import EEGProcessor, Filter
 from signalProcessor.HRProcessor import HRProcessor
 from enum import Enum
+
 
 FONT_SIZE_H1 = 20
 FONT_SIZE_H2 = 18
@@ -116,14 +118,14 @@ class EegVisualizerMainWindow(QMainWindow):
 
         for stream in streams:
             gl.lsl_handler.connect_to_specific_lsl_stream(stream)
-            gl.lsl_handler.start_data_recording_thread(stream)
+            # gl.lsl_handler.start_data_recording_thread(stream)
 
         eeg_stream = streams[0]
         hr_stream = streams[1]
         rr_stream = streams[2]
 
         gl.eeg_processor = EEGProcessor(gl.lsl_handler, gl.lsl_handler.get_stream_by_name(eeg_stream.name()))
-        gl.hr_processor = HRProcessor(gl.lsl_handler, gl.lsl_handler.get_stream_by_name(hr_stream.name()), gl.lsl_handler.get_stream_by_name(rr_stream.name()), gl.MAX_HR_DATA_SAMPLES)
+        gl.hr_processor = HRProcessor(gl.lsl_handler, gl.lsl_handler.get_stream_by_name(hr_stream.name()), gl.lsl_handler.get_stream_by_name(rr_stream.name()))
 
     def resizeEvent(self, event):
         if self.stream_selection_card.isVisible():
@@ -151,7 +153,7 @@ class EegVisualizerMainWindow(QMainWindow):
 
         self.central_layout.removeWidget(self.central_layout.itemAt(0).widget())
 
-        self.visualizer_3d, self.visualizer_hr = EegVisualizerMainWindow.setup_timer_and_get_visualizers_3d_and_hr(self.timer)
+        self.visualizer_3d, self.visualizer_hr, self.visualizer_topo = EegVisualizerMainWindow.setup_timer_and_get_visualizers_3d_and_hr(self.timer)
 
         self.visualizer_3d.set_seconds_shown(DEFAULT_SECONDS_SHOWN)
 
@@ -178,17 +180,18 @@ class EegVisualizerMainWindow(QMainWindow):
         self.central_layout.addWidget(container_widget)
 
     def setup_timer_and_get_visualizers_3d_and_hr(timer):
-        visualizer_3d = Visualizer3D()
-        visualizer_hr = VisualizerHR()
+        visualizer_3d = Visualizer3D(gl.eeg_processor)
+        visualizer_hr = VisualizerHR(gl.hr_processor)
+        visualizer_topoplot = VisualizerTopoPlot()
 
-        timer = QtCore.QTimer(timer)
-        timer.timeout.connect(visualizer_3d.update_spectrum)
-        timer.timeout.connect(visualizer_hr.update_graph)
-        timer.setInterval(gl.EEG_GRAPH_INTERVAL_S)
+        # timer = QtCore.QTimer(timer)
+        # timer.timeout.connect(visualizer_3d.update_spectrum)
+        # timer.timeout.connect(visualizer_hr.update_graph)
+        # timer.setInterval(gl.EEG_GRAPH_INTERVAL_S)
 
-        timer.start()
+        # timer.start()
 
-        return visualizer_3d, visualizer_hr
+        return visualizer_3d, visualizer_hr, visualizer_topoplot
     
     def get_all_lsl_streams():
         streams = gl.lsl_handler.get_all_lsl_streams()
@@ -277,11 +280,13 @@ class EegVisualizerMainWindow(QMainWindow):
         form_layout.addRow(plot_label, main_plot_dropdown)
         
         frequency_band_dropdown = QComboBox()
-        frequency_band_dropdown.addItems(['Alpha', 'Beta', 'Theta', 'Delta'])
+        frequency_band_dropdown.addItems(['Delta','Theta' ,'Alpha', 'Beta', 'Gamma'])
         frequency_band_dropdown.setStyleSheet("margin-top: 10px;")
         frequency_band_label = QLabel("Frequency Band:")
         frequency_band_label.setStyleSheet("border: none;")
         form_layout.addRow(frequency_band_label, frequency_band_dropdown)
+
+        frequency_band_dropdown.currentIndexChanged.connect(lambda index: self.handle_filter_change(frequency_band_dropdown.itemText(index)))
         
         seconds_shown_input = QSpinBox()
         seconds_shown_input.setRange(1, 100)
@@ -301,7 +306,7 @@ class EegVisualizerMainWindow(QMainWindow):
         window_size_exponent_label.setStyleSheet("border: none;")
         form_layout.addRow(window_size_exponent_label, window_size_exponent_input)
 
-        window_size_exponent_input.valueChanged.connect(self.handle_seconds_shown_change)
+        window_size_exponent_input.valueChanged.connect(self.handle_window_size_exponent_change)
 
         form_container = QWidget()
         form_container.setLayout(form_layout)
@@ -352,6 +357,21 @@ class EegVisualizerMainWindow(QMainWindow):
             exponent = int(new_value)
             new_window_size = 2 ** exponent
 
+            self.visualizer_3d.set_fft_buffer_len(new_window_size)
+            self.visualizer_topo.set_window_size(new_window_size)
             # @todo: change window size for spectrogram and topoplot
         except ValueError:
             pass
+
+    def handle_filter_change(self, filter_identifier):
+        if filter_identifier == "Delta":
+            self.visualizer_topo.set_filter(Filter.Delta)
+        elif filter_identifier == "Theta":
+            self.visualizer_topo.set_filter(Filter.Theta)
+        elif filter_identifier == "Alpha":
+            self.visualizer_topo.set_filter(Filter.Alpha)
+        elif filter_identifier == "Beta":
+            self.visualizer_topo.set_filter(Filter.Beta)
+        elif filter_identifier == "Gamma":
+            self.visualizer_topo.set_filter(Filter.Gamma)
+        else: raise Exception()

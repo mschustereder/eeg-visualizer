@@ -10,7 +10,7 @@ from visualizer.EEGGraphFrame import EEGGraphFrame
 from visualizer.Visualizer3DColorBar import Visualizer3DColorBar
 import threading
 import time
-
+from signalProcessor.EEGProcessor import EEGProcessor
 
 class CustomAxis(gl.GLAxisItem):
 
@@ -115,7 +115,7 @@ class Visualizer3D(gl.GLViewWidget):
     update_spectrum_signal = QtCore.Signal()
     loading_buffer_start_signal = QtCore.Signal()
     loading_buffer_end_signal = QtCore.Signal()
-
+    eeg_processor : EEGProcessor
     #the values for x, y and z than can be seen from the camera
     x_range = 48
     y_range = 40
@@ -199,7 +199,7 @@ class Visualizer3D(gl.GLViewWidget):
                 time.sleep(g.GRAPH_UPDATE_PAUSE_S)
                 continue
             
-            data = self.eeg_processor.get_eeg_data_as_chunk()
+            data = self.eeg_processor.get_available_eeg_data()
             self.eeg_processor_lock.release()
 
             if data == None:
@@ -209,7 +209,7 @@ class Visualizer3D(gl.GLViewWidget):
             self.graph_parameter_lock.acquire()
             
             for sample in data:
-                self.data.fft_values_buffer.append(mean(list(sample[0].values())))
+                self.data.fft_values_buffer.append(mean(list(sample[0])))
 
             #only update graph if accumulated data is FFT_SAMPLES samples long
             if len(self.data.fft_values_buffer) >= self.fft_buffer_len:

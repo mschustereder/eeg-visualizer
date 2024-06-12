@@ -8,14 +8,15 @@ from signalProcessor.EEGProcessor import EEGProcessor
 import visualizer.globals as g
 
 
-N_SAMPLES = 1024
+N_SAMPLES_DEFAULT = 1024
 S_FREQU = 500
 AMOUNT_OF_CHANNELS_TO_USE = 28
 
 class VisualizerTopoPlot(FigureCanvas):
     def __init__(self, parent=None):
         self.eegprocessor = g.eeg_processor
-        first_data = g.eeg_processor.get_specific_amount_of_eeg_samples_without_timestamps(N_SAMPLES)
+        self.window_size = N_SAMPLES_DEFAULT
+        first_data = g.eeg_processor.get_specific_amount_of_eeg_samples_without_timestamps(self.window_size)
         first_data = [liste[:AMOUNT_OF_CHANNELS_TO_USE] for liste in first_data] #THIS IS ONLY NECESSARY FOR THE TEST XDF FILE-REMOVE AFER TEST PHASE
         self.data = first_data
         self.channel_names = g.eeg_processor.get_eeg_layout()[:AMOUNT_OF_CHANNELS_TO_USE]
@@ -42,7 +43,7 @@ class VisualizerTopoPlot(FigureCanvas):
     eegprocessor : EEGProcessor
 
     def update_plot(self):
-        new_data = g.eeg_processor.get_available_eeg_data_without_timestamps()
+        new_data = g.eeg_processor.get_available_eeg_data_without_timestamps(self.window_size)
         new_data = [liste[:AMOUNT_OF_CHANNELS_TO_USE] for liste in new_data] #THIS IS ONLY NECESSARY FOR THE TEST XDF FILE-REMOVE AFER TEST PHASE
         self.data = self.data[len(new_data):]
         self.data += new_data
@@ -57,7 +58,12 @@ class VisualizerTopoPlot(FigureCanvas):
         self.ax.figure.canvas.draw()
         self.ax.figure.canvas.flush_events()
 
-   
+    def set_window_size(self, new_window_size):
+        self.window_size = new_window_size
+        self.data = g.eeg_processor.get_specific_amount_of_eeg_samples_without_timestamps(new_window_size)
+
+    def set_filter(self, filter: Filter):
+        self.filter = filter
         
     def set_montage(self, data):
         biosemi_montage = mne.channels.make_standard_montage('biosemi64')  # set a montage, see mne document
