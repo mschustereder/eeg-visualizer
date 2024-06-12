@@ -2,7 +2,6 @@ import sys
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
-from PyQt5.QtWidgets import QApplication, QMainWindow, QVBoxLayout, QWidget
 from signalProcessor.EEGProcessor import *
 from lslHandler.lslHandler import LslHandler
 from signalProcessor.EEGProcessor import EEGProcessor
@@ -79,30 +78,3 @@ class VisualizerTopoPlot(FigureCanvas):
         # raw = mne.io.RawArray(mean_data.T, info)
         self.raw.set_montage(biosemi_montage)
 
-
-class App(QMainWindow):
-    def __init__(self):
-        super().__init__()
-        self.setWindowTitle('Dynamic Plot in Qt')
-        self.setGeometry(100, 100, 800, 600)
-        
-        central_widget = QWidget(self)
-        self.setCentralWidget(central_widget)
-        
-        layout = QVBoxLayout(central_widget)
-        self.plot_canvas = VisualizerTopoPlot(central_widget)
-        layout.addWidget(self.plot_canvas)
-        
-        self.show()
-
-if __name__ == '__main__':
-    streams = g.lsl_handler.get_all_lsl_streams()
-    print([stream.name() for stream in streams])
-    for stream in streams:
-        g.lsl_handler.connect_to_specific_lsl_stream(stream)
-        g.lsl_handler.start_data_recording_thread(stream)
-
-    g.eeg_processor = EEGProcessor(g.lsl_handler, g.lsl_handler.get_stream_by_name("BrainVision RDA"))
-    app = QApplication(sys.argv)
-    main_app = App()
-    sys.exit(app.exec_())
