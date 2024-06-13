@@ -49,19 +49,17 @@ class EEGProcessor:
     def get_eeg_layout(self):
         return self.eeg_layout
 
-    def _correct_timestamps(self, list_to_change: List[Tuple[List[float], float]]) -> List[Tuple[List[float], float]]:
-        data_with_corrected_timestamps = []
-        for index,data_tuple in enumerate(list_to_change):
-            timestamp = data_tuple[1]
+    def _correct_timestamps(self, list_to_change: List[List[float]]) -> List[List[float]]:
+        for index,timestamp in enumerate(list_to_change):
             if self.first_timestamp == 0:
                 self.first_timestamp = timestamp
-            data_with_corrected_timestamps.append((list_to_change[index][0], timestamp-self.first_timestamp))
-        return data_with_corrected_timestamps
+            list_to_change[index] =  timestamp-self.first_timestamp
+        return list_to_change
 
     def get_available_eeg_data(self, max_samples = SAMPLE_COUNT_MAX_QUEUE)  -> List[Tuple[List[float], float]]:
-        data = self.lslhandler.get_available_data(self.stream, max_samples)
-        if data:
-            return self._correct_timestamps(data)
+        samples, timestamps = self.lslhandler.get_available_data(self.stream, max_samples)
+        if samples:
+            return samples, self._correct_timestamps(timestamps)
         else: 
             return None
 
@@ -69,8 +67,8 @@ class EEGProcessor:
         return self.lslhandler.get_available_data_without_timestamps(self.stream, max_samples)
     
     def get_specific_amount_of_eeg_samples(self, required_sample_count) -> List[Tuple[List[float], float]]:
-        data = self.lslhandler.get_specific_amount_of_samples(self.stream, required_sample_count)
-        return self._correct_timestamps(data)
+        samples, timestamps = self.lslhandler.get_specific_amount_of_samples(self.stream, required_sample_count)
+        return samples, self._correct_timestamps(timestamps)
     
     def get_specific_amount_of_eeg_samples_without_timestamps(self, required_sample_count) -> List[List[float]]:
         return self.lslhandler.get_specific_amount_of_samples_without_timestamps(self.stream, required_sample_count)
