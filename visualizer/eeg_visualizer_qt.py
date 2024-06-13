@@ -194,7 +194,7 @@ class EegVisualizerMainWindow(QMainWindow):
 
     def setup_visualizers_3d_and_hr():
         visualizer_3d_color_bar = Visualizer3DColorBar()
-        visualizer_3d = Visualizer3D(gl.eeg_processor, visualizer_3d_color_bar)
+        visualizer_3d = None#Visualizer3D(gl.eeg_processor, visualizer_3d_color_bar)
         visualizer_hr = VisualizerHR(gl.hr_processor)
         visualizer_topoplot = VisualizerTopoPlot()
 
@@ -289,7 +289,7 @@ class EegVisualizerMainWindow(QMainWindow):
         main_plot_dropdown.currentIndexChanged.connect(lambda index: self.update_main_plot(main_plot_dropdown.itemText(index)))
         
         frequency_band_dropdown = QComboBox()
-        frequency_band_dropdown.addItems(['Delta','Theta' ,'Alpha', 'Beta', 'Gamma'])
+        frequency_band_dropdown.addItems(['All','Delta','Theta' ,'Alpha', 'Beta', 'Gamma'])
         frequency_band_dropdown.setStyleSheet("margin-top: 10px;")
         frequency_band_label = QLabel("Frequency Band:")
         frequency_band_label.setStyleSheet("border: none;")
@@ -393,4 +393,6 @@ class EegVisualizerMainWindow(QMainWindow):
             self.visualizer_topo.set_filter(Filter.Beta)
         elif filter_identifier == "Gamma":
             self.visualizer_topo.set_filter(Filter.Gamma)
+        elif filter_identifier == "All":
+            self.visualizer_topo.set_filter(Filter.NoNe)
         else: raise Exception()
