@@ -419,7 +419,7 @@ class Visualizer3DLine(Visualizer3D):
         if len(self.traces) < len(self.data.fft_vizualizer_values):
             diff = len(self.data.fft_vizualizer_values)-len(self.traces)
             for _ in range(len(self.traces), len(self.data.fft_vizualizer_values)):
-                self.traces.append(gl.GLLinePlotItem(width=1, antialias=True))
+                self.traces.append(gl.GLLinePlotItem(width=2, antialias=True))
                 self.setup_plot_item(self.traces[-1])
             print(f"added {diff} traces")
 
@@ -444,7 +444,7 @@ class Visualizer3DLine(Visualizer3D):
             
             for index, spec in enumerate(z):
                 points = np.vstack([np.full((len(y)), x[index]), y, spec]).transpose()
-                self.traces[index].setData(pos = points, color = (0, 1, 0, 1))
+                self.traces[index].setData(pos = points, color = self.data.colors[index])
             
             self.graph_parameter_lock.release()
 

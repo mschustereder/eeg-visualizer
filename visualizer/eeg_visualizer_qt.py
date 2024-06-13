@@ -3,7 +3,7 @@ from PySide6.QtCore import Qt, QSize
 from PySide6 import QtCore, QtGui
 import sys
 from PySide6.QtWidgets import QApplication
-from visualizer.Visualizer3D import Visualizer3D
+from visualizer.Visualizer3D import Visualizer3DSurface, Visualizer3DLine
 from visualizer.Visualizer3DColorBar import Visualizer3DColorBar
 from visualizer.VisualizerTopoPlot import VisualizerTopoPlot
 from visualizer.VisualizerHR import VisualizerHR, HR_BIO_VARIABLE
@@ -194,9 +194,9 @@ class EegVisualizerMainWindow(QMainWindow):
 
     def setup_visualizers_3d_and_hr():
         visualizer_3d_color_bar = Visualizer3DColorBar()
-        visualizer_3d = Visualizer3D(gl.eeg_processor, visualizer_3d_color_bar)
+        visualizer_3d = Visualizer3DLine(gl.eeg_processor, visualizer_3d_color_bar)
         visualizer_hr = VisualizerHR(gl.hr_processor)
-        visualizer_topoplot = VisualizerTopoPlot()
+        visualizer_topoplot = None#VisualizerTopoPlot()
 
         return visualizer_3d, visualizer_3d_color_bar, visualizer_hr, visualizer_topoplot
     
@@ -377,20 +377,21 @@ class EegVisualizerMainWindow(QMainWindow):
             new_window_size = 2 ** exponent
 
             self.visualizer_3d.set_fft_buffer_len(new_window_size)
-            self.visualizer_topo.set_window_size(new_window_size)
+            #self.visualizer_topo.set_window_size(new_window_size)
             # @todo: change window size for spectrogram and topoplot
         except ValueError:
             pass
 
     def handle_filter_change(self, filter_identifier):
-        if filter_identifier == "Delta":
-            self.visualizer_topo.set_filter(Filter.Delta)
-        elif filter_identifier == "Theta":
-            self.visualizer_topo.set_filter(Filter.Theta)
-        elif filter_identifier == "Alpha":
-            self.visualizer_topo.set_filter(Filter.Alpha)
-        elif filter_identifier == "Beta":
-            self.visualizer_topo.set_filter(Filter.Beta)
-        elif filter_identifier == "Gamma":
-            self.visualizer_topo.set_filter(Filter.Gamma)
-        else: raise Exception()
+        # if filter_identifier == "Delta":
+        #     self.visualizer_topo.set_filter(Filter.Delta)
+        # elif filter_identifier == "Theta":
+        #     self.visualizer_topo.set_filter(Filter.Theta)
+        # elif filter_identifier == "Alpha":
+        #     self.visualizer_topo.set_filter(Filter.Alpha)
+        # elif filter_identifier == "Beta":
+        #     self.visualizer_topo.set_filter(Filter.Beta)
+        # elif filter_identifier == "Gamma":
+        #     self.visualizer_topo.set_filter(Filter.Gamma)
+        # else: raise Exception()
+        pass
