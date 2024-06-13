@@ -49,9 +49,9 @@ class LslHandler:
         return samples, timestamps
     
     def get_available_data_without_timestamps(self, stream: StreamInfo, max_samples = SAMPLE_COUNT_MAX_QUEUE) -> List[List[float]]:
-        list = self.get_available_data(stream, max_samples)
+        samples, _ = self.get_available_data(stream, max_samples)
         if not list: return None
-        return [element[0] for element in list]
+        return samples
     
     def get_specific_amount_of_samples(self, stream: StreamInfo, required_sample_count) -> Tuple[List[List[float]], List[float]]:
         data = []
@@ -65,8 +65,8 @@ class LslHandler:
         return data, timestamps
 
     def get_specific_amount_of_samples_without_timestamps(self, stream: StreamInfo, required_sample_count) -> List[List[float]]:
-        list = self.get_specific_amount_of_samples(stream, required_sample_count)
-        return [element[0] for element in list]
+        samples, _ = self.get_specific_amount_of_samples(stream, required_sample_count)
+        return samples
 
     # def _zip_samples_and_timestamps(self, samples : List[List[float]], timestamps : List[float])  -> List[Tuple[List[float], float]]:
     #     data_with_timestamps = []
