@@ -10,7 +10,7 @@ from visualizer.EEGGraphFrame import EEGGraphFrame
 from visualizer.Visualizer3DColorBar import Visualizer3DColorBar
 import threading
 import time
-from signalProcessor.EEGProcessor import EEGProcessor
+from signalProcessor.EEGProcessor import EEGProcessor, Filter
 
 class CustomAxis(gl.GLAxisItem):
 
@@ -139,6 +139,7 @@ class Visualizer3D(gl.GLViewWidget):
         self.scale_factor_y = 1
         self.scale_factor_z = 1
         self.z_was_scaled = False
+        self.filter_type = Filter.Gamma
 
         self.resized.connect(self.on_resized)
 
@@ -200,16 +201,28 @@ class Visualizer3D(gl.GLViewWidget):
                 continue
             
             data = self.eeg_processor.get_available_eeg_data()
+            
             self.eeg_processor_lock.release()
 
             if data == None:
                 time.sleep(g.GRAPH_UPDATE_PAUSE_S)
                 continue
-            
+
+            mean_ch = None
+
             self.graph_parameter_lock.acquire()
+
+            self.data.filter_values_buffer.extend(data[0])
             
-            for sample in data:
-                self.data.fft_values_buffer.append(mean(list(sample[0])))
+            #while the buffer is loading we can just don´t apply the filter
+            if len(self.data.filter_values_buffer) >= self.fft_buffer_len and self.filter_type != Filter.NoNe:
+                self.data.filter_values_buffer = self.data.filter_values_buffer[-self.fft_buffer_len:] 
+                filtered_data = self.eeg_processor.filter_eeg_data(self.data.filter_values_buffer, self.filter_type)
+                mean_ch = np.mean(np.array(filtered_data), axis=1) 
+            else:
+                mean_ch = np.mean(np.array(data[0]), axis=1)
+
+            self.data.fft_values_buffer.extend(mean_ch)
 
             #only update graph if accumulated data is FFT_SAMPLES samples long
             if len(self.data.fft_values_buffer) >= self.fft_buffer_len:
@@ -221,7 +234,7 @@ class Visualizer3D(gl.GLViewWidget):
 
                 #we want to get a spectrum every 100ms, so we will calulate overlapping fft windows, and thus use the fft_values_buffer as a FIFO buffer
                 self.data.fft_values_buffer = self.data.fft_values_buffer[-self.fft_buffer_len:] 
-                sample_time = data[-1][1] - data[0][1] #this is the time that has passed in the sample world
+                sample_time = data[1][-1] - data[1][0] #this is the time that has passed in the sample world
                 fft_magnitude_normalized = fft.calculate_fft(self.data.fft_values_buffer)
                 self.prepare_data_for_plotting(fft_magnitude_normalized, sample_time)
                 self.scale_z()
