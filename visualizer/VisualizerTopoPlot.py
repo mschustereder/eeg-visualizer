@@ -33,8 +33,8 @@ class VisualizerTopoPlot(FigureCanvas):
         # mean_ch = np.mean(np.array(self.data), axis=0) 
 
         im, cn = mne.viz.plot_topomap(mean_ch, self.raw.info,axes=self.ax ,show=False)
-        cbar = self.fig.colorbar(im, ax=self.ax)
-        cbar.set_label("µV")
+        self.cbar = self.fig.colorbar(im, ax=self.ax)
+        self.cbar.set_label("µV")
                 
         self.timer = self.fig.canvas.new_timer(interval=g.GRAPH_UPDATE_PAUSE_S)  # Update every 50 ms
         self.timer.add_callback(self.update_plot)
@@ -54,6 +54,7 @@ class VisualizerTopoPlot(FigureCanvas):
 
         self.ax.clear()
         im, cn = mne.viz.plot_topomap(mean_ch, self.raw.info,axes=self.ax ,show=False)
+        self.cbar.update_normal(im)
        
         self.ax.figure.canvas.draw()
         self.ax.figure.canvas.flush_events()
