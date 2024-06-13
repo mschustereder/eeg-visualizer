@@ -34,7 +34,7 @@ class HRProcessor:
         #(ref)
         global average_rr, rr_data_buffer
         rr_intervals = [rr_data_buffer[-i] for i in range(1, FEAT_WINDOW_SIZE+1)]
-        sample = self.lslhandler.get_specific_amount_of_samples_without_timestamps(self.rr_stream, 1)
+        sample = self.lslhandler.get_available_data_without_timestamps(self.rr_stream)
         if sample != None:
             this_rr = sample[0][0]  # RR peaks in ms
             rr_intervals = np.array(rr_intervals)
