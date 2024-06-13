@@ -38,38 +38,40 @@ class LslHandler:
         new_inlet = pylsl.StreamInlet(stream)
         self.active_streams[stream] = new_inlet
         
-    def get_available_data(self, stream: StreamInfo, max_samples = SAMPLE_COUNT_MAX_QUEUE) -> List[Tuple[List[float], float]]:
+    def get_available_data(self, stream: StreamInfo, max_samples = SAMPLE_COUNT_MAX_QUEUE) -> Tuple[List[List[float]], List[float]]:
         inlet = self.active_streams[stream]
         samples, timestamps = inlet.pull_chunk(timeout = 0.0, max_samples = max_samples)
-        if not samples: return None
-        data_with_timestamps = self._zip_samples_and_timestamps(samples, timestamps)
+        if not samples: return None,None
+        # data_with_timestamps = self._zip_samples_and_timestamps(samples, timestamps)
         if inlet.samples_available() > SAMPLE_COUNT_MAX_QUEUE:
             nr_of_flushed_samples = inlet.flush()
             print(f"Warning: Throwing away {nr_of_flushed_samples} samples")
-        return data_with_timestamps
+        return samples, timestamps
     
     def get_available_data_without_timestamps(self, stream: StreamInfo, max_samples = SAMPLE_COUNT_MAX_QUEUE) -> List[List[float]]:
         list = self.get_available_data(stream, max_samples)
         if not list: return None
         return [element[0] for element in list]
     
-    def get_specific_amount_of_samples(self, stream: StreamInfo, required_sample_count) -> List[Tuple[List[float], float]]:
+    def get_specific_amount_of_samples(self, stream: StreamInfo, required_sample_count) -> Tuple[List[List[float]], List[float]]:
         data = []
+        timestamps = []
         while (length := len(data)) < required_sample_count:
-            data_temp = self.get_available_data(stream, required_sample_count - length)
+            data_temp, samples_temp = self.get_available_data(stream, required_sample_count - length)
             if data_temp:
                 data += data_temp
+                timestamps += samples_temp
         assert len(data) == required_sample_count
-        return data
+        return data, timestamps
 
     def get_specific_amount_of_samples_without_timestamps(self, stream: StreamInfo, required_sample_count) -> List[List[float]]:
         list = self.get_specific_amount_of_samples(stream, required_sample_count)
         return [element[0] for element in list]
 
-    def _zip_samples_and_timestamps(self, samples : List[List[float]], timestamps : List[float])  -> List[Tuple[List[float], float]]:
-        data_with_timestamps = []
-        data_with_timestamps.extend(zip(samples, timestamps))
-        return data_with_timestamps
+    # def _zip_samples_and_timestamps(self, samples : List[List[float]], timestamps : List[float])  -> List[Tuple[List[float], float]]:
+    #     data_with_timestamps = []
+    #     data_with_timestamps.extend(zip(samples, timestamps))
+    #     return data_with_timestamps
    
     def get_stream_by_name(self, name):
         for stream in self.active_streams:
