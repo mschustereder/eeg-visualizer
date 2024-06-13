@@ -139,7 +139,7 @@ class Visualizer3D(gl.GLViewWidget):
         self.scale_factor_y = 1
         self.scale_factor_z = 1
         self.z_was_scaled = False
-        self.filter_type = Filter.Gamma
+        self.filter_type = Filter.NoNe
 
         self.resized.connect(self.on_resized)
 
@@ -270,6 +270,14 @@ class Visualizer3D(gl.GLViewWidget):
         print("setting eeg processor")
         self.eeg_processor_lock.acquire()
         self.eeg_processor = eeg_processor
+        self.initialize(self.fft_buffer_len, self.seconds_shown)
+        self.eeg_processor_lock.release()
+
+
+    def set_filter_type(self, filter_type : Filter):
+        print("setting eeg processor")
+        self.eeg_processor_lock.acquire()
+        self.filter_type = filter_type
         self.initialize(self.fft_buffer_len, self.seconds_shown)
         self.eeg_processor_lock.release()
 
