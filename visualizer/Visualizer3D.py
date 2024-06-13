@@ -1,3 +1,4 @@
+from pyqtgraph.colormap import get
 import pyqtgraph.opengl as gl
 import pyqtgraph as pg
 from OpenGL.GL import *
@@ -128,14 +129,11 @@ class Visualizer3D(gl.GLViewWidget):
         self.color_bar = color_bar
         if self.color_bar is not None:
             self.color_bar.set_color_map(cm)
-        self.plot_item = gl.GLSurfacePlotItem(np.zeros(10), np.zeros(10), np.zeros((10, 10)))
-        self.addItem(self.plot_item)
         self.graph_parameter_lock = threading.Lock()
         self.eeg_processor_lock = threading.Lock()
         self.eeg_processor = eeg_processor
         self.initialize(g.DEFAULT_FFT_SAMPLES, g.DEFAULT_SECONDS_SHOWN_IN_SPECTROGRAM)
         self.setCameraPosition(pos=QtGui.QVector3D(0, 0, 5), distance=40, elevation=7, azimuth=0)
-        self.scale_factor_x = 1
         self.scale_factor_y = 1
         self.scale_factor_z = 1
         self.z_was_scaled = False
@@ -143,22 +141,8 @@ class Visualizer3D(gl.GLViewWidget):
 
         self.resized.connect(self.on_resized)
 
-        # we want that the spectrum is always good visible, x and y can be scaled at the beginning, since the paramters don´t change during execution
-        frequency_range = g.FREQUENCY_MAX - g.FREQUENCY_MIN
-        scale_y = self.y_range/frequency_range
-        if scale_y != 1:
-            self.scale_factor_y = self.scale_factor_y*scale_y
-            self.plot_item.scale(1, scale_y, 1)
-
-        #value gotten through experimenting
-        scale_x = 9.5
-        if scale_x != 1:
-            self.scale_factor_x = self.scale_factor_x*scale_x
-            self.plot_item.scale(scale_x, 1, 1)
-        
-        self.plot_item.translate(0, (-frequency_range/2 - g.FREQUENCY_MIN)*self.scale_factor_y, 0)
-
         self.frequency_ticks = YAxis(self, "Frequency (Hz)")
+        frequency_range = g.FREQUENCY_MAX - g.FREQUENCY_MIN
         self.frequency_ticks.add_ticks(list(range(0, g.FREQUENCY_MAX+5, 5)), self.scale_factor_y, (-frequency_range/2 - g.FREQUENCY_MIN), -500)
 
         self.thread_end_event = threading.Event()
@@ -167,6 +151,25 @@ class Visualizer3D(gl.GLViewWidget):
         self.plotting_done_cond = threading.Condition()
         self.plotting_done = False
         self.processor_thread.start()
+
+
+    def setup_plot_item(self, item):
+        self.addItem(item)
+
+        # we want that the spectrum is always good visible, x and y can be scaled at the beginning, since the paramters don´t change during execution
+        frequency_range = g.FREQUENCY_MAX - g.FREQUENCY_MIN
+        scale_y = self.y_range/frequency_range
+        if scale_y != 1:
+            if (self.scale_factor_y == 1): #only change once
+                self.scale_factor_y = self.scale_factor_y*scale_y
+            item.scale(1, scale_y, 1)
+
+        #value gotten through experimenting
+        scale_x = 9.5
+        if scale_x != 1:
+            item.scale(scale_x, 1, 1)
+        
+        item.translate(0, (-frequency_range/2 - g.FREQUENCY_MIN)*scale_y, 0)
 
     def init_frequencies(self):
         sampling_rate = self.eeg_processor.stream.nominal_srate()
@@ -354,6 +357,27 @@ class Visualizer3D(gl.GLViewWidget):
                 self.data.fft_timestamps = self.data.fft_timestamps[cut_time_index:]
 
     def update_spectrum_from_thread(self):
+        pass
+
+    def on_resized(self, evt=None):
+        self.frequency_ticks.set_fontsizes_from_pixel_size(self.pixelSize(QtGui.QVector3D(0, 0, 0)))
+
+    def stop_and_wait_for_process_thread(self):
+        self.thread_end_event.is_set()
+        self.processor_thread.join()
+
+
+
+class Visualizer3DSurface(Visualizer3D):
+
+
+    def __init__(self, eeg_processor, color_bar: Visualizer3DColorBar = None, cm=pg.colormap.get('turbo')):
+
+        self.plot_item = gl.GLSurfacePlotItem(np.zeros(10), np.zeros(10), np.zeros((10, 10)))
+        super().__init__(eeg_processor, color_bar, cm)
+        self.setup_plot_item(self.plot_item)
+
+    def update_spectrum_from_thread(self):
         self.graph_parameter_lock.acquire()
         x = np.array(self.data.fft_timestamps)
         y = np.array(self.data.frequencies)
@@ -377,10 +401,58 @@ class Visualizer3D(gl.GLViewWidget):
         self.plotting_done_cond.notify()
         self.plotting_done_cond.release()
 
-    def on_resized(self, evt=None):
-        self.frequency_ticks.set_fontsizes_from_pixel_size(self.pixelSize(QtGui.QVector3D(0, 0, 0)))
 
-    def stop_and_wait_for_process_thread(self):
-        self.thread_end_event.is_set()
-        self.processor_thread.join()
 
+class Visualizer3DLine(Visualizer3D):
+
+
+    def __init__(self, eeg_processor, color_bar: Visualizer3DColorBar = None, cm=pg.colormap.get('turbo')):
+
+        self.traces = []
+        super().__init__(eeg_processor, color_bar, cm)
+        self.setBackgroundColor(0, 0, 0)
+
+
+    def update_spectrum_from_thread(self):
+        self.graph_parameter_lock.acquire()
+
+        if len(self.traces) < len(self.data.fft_vizualizer_values):
+            diff = len(self.data.fft_vizualizer_values)-len(self.traces)
+            for _ in range(len(self.traces), len(self.data.fft_vizualizer_values)):
+                self.traces.append(gl.GLLinePlotItem(width=1, antialias=True))
+                self.setup_plot_item(self.traces[-1])
+            print(f"added {diff} traces")
+
+        elif len(self.traces) > len(self.data.fft_vizualizer_values):
+            diff = len(self.traces)-len(self.data.fft_vizualizer_values)
+            items_to_remove = self.traces[len(self.data.fft_vizualizer_values) :]
+            for item in items_to_remove:
+                self.removeItem(item)
+            self.traces = self.traces[0: len(self.data.fft_vizualizer_values)]
+            print(f"removed {diff} traces")
+
+        x = np.array(self.data.fft_timestamps)
+        y = np.array(self.data.frequencies)
+        z = np.array(self.data.fft_vizualizer_values)*self.scale_factor_z
+
+        if len(self.data.fft_vizualizer_values) != 0:
+            if self.z_was_scaled:
+                if self.color_bar is not None:
+                    self.color_bar.update_values([0, self.max_value])
+                self.z_was_scaled = False
+
+            
+            for index, spec in enumerate(z):
+                points = np.vstack([np.full((len(y)), x[index]), y, spec]).transpose()
+                self.traces[index].setData(pos = points, color = (0, 1, 0, 1))
+            
+            self.graph_parameter_lock.release()
+
+        else:
+            print("buffer empty, update spectrum was called right after change of parameters")
+            self.graph_parameter_lock.release()
+
+        self.plotting_done_cond.acquire()
+        self.plotting_done = True
+        self.plotting_done_cond.notify()
+        self.plotting_done_cond.release()
