@@ -238,7 +238,7 @@ class Visualizer3D(gl.GLViewWidget):
                 fft_magnitude_normalized = fft.calculate_fft(self.data.fft_values_buffer)
                 self.prepare_data_for_plotting(fft_magnitude_normalized, sample_time)
                 self.scale_z()
-                self.data.colors = self.cm.map(self.data.fft_vizualizer_values, pg.ColorMap.FLOAT)
+                self.data.colors = self.cm.map(np.array(self.data.fft_vizualizer_values)/np.amax(self.data.fft_vizualizer_values), pg.ColorMap.FLOAT)
                 self.update_spectrum_signal.emit()
                 self.graph_parameter_lock.release()
                 self.plotting_done_cond.acquire()
