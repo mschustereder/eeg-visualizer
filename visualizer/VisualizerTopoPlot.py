@@ -2,21 +2,21 @@ import sys
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
-from PyQt5.QtWidgets import QApplication, QMainWindow, QVBoxLayout, QWidget
 from signalProcessor.EEGProcessor import *
 from lslHandler.lslHandler import LslHandler
 from signalProcessor.EEGProcessor import EEGProcessor
 import visualizer.globals as g
 
 
-N_SAMPLES = 1024
+N_SAMPLES_DEFAULT = 1024
 S_FREQU = 500
 AMOUNT_OF_CHANNELS_TO_USE = 28
 
 class VisualizerTopoPlot(FigureCanvas):
     def __init__(self, parent=None):
         self.eegprocessor = g.eeg_processor
-        first_data = g.eeg_processor.get_specific_amount_of_eeg_samples_without_timestamps(N_SAMPLES)
+        self.window_size = N_SAMPLES_DEFAULT
+        first_data = g.eeg_processor.get_specific_amount_of_eeg_samples_without_timestamps(self.window_size)
         first_data = [liste[:AMOUNT_OF_CHANNELS_TO_USE] for liste in first_data] #THIS IS ONLY NECESSARY FOR THE TEST XDF FILE-REMOVE AFER TEST PHASE
         self.data = first_data
         self.channel_names = g.eeg_processor.get_eeg_layout()[:AMOUNT_OF_CHANNELS_TO_USE]
@@ -33,8 +33,8 @@ class VisualizerTopoPlot(FigureCanvas):
         # mean_ch = np.mean(np.array(self.data), axis=0) 
 
         im, cn = mne.viz.plot_topomap(mean_ch, self.raw.info,axes=self.ax ,show=False)
-        cbar = self.fig.colorbar(im, ax=self.ax)
-        cbar.set_label("µV")
+        self.cbar = self.fig.colorbar(im, ax=self.ax)
+        self.cbar.set_label("µV")
                 
         self.timer = self.fig.canvas.new_timer(interval=g.GRAPH_UPDATE_PAUSE_S)  # Update every 50 ms
         self.timer.add_callback(self.update_plot)
@@ -43,7 +43,7 @@ class VisualizerTopoPlot(FigureCanvas):
     eegprocessor : EEGProcessor
 
     def update_plot(self):
-        new_data = g.eeg_processor.get_available_eeg_data_without_timestamps()
+        new_data = g.eeg_processor.get_available_eeg_data_without_timestamps(self.window_size)
         new_data = [liste[:AMOUNT_OF_CHANNELS_TO_USE] for liste in new_data] #THIS IS ONLY NECESSARY FOR THE TEST XDF FILE-REMOVE AFER TEST PHASE
         self.data = self.data[len(new_data):]
         self.data += new_data
@@ -54,11 +54,17 @@ class VisualizerTopoPlot(FigureCanvas):
 
         self.ax.clear()
         im, cn = mne.viz.plot_topomap(mean_ch, self.raw.info,axes=self.ax ,show=False)
+        self.cbar.update_normal(im)
        
         self.ax.figure.canvas.draw()
         self.ax.figure.canvas.flush_events()
 
-   
+    def set_window_size(self, new_window_size):
+        self.window_size = new_window_size
+        self.data = g.eeg_processor.get_specific_amount_of_eeg_samples_without_timestamps(new_window_size)
+
+    def set_filter(self, filter: Filter):
+        self.filter = filter
         
     def set_montage(self, data):
         biosemi_montage = mne.channels.make_standard_montage('biosemi64')  # set a montage, see mne document
@@ -79,30 +85,3 @@ class VisualizerTopoPlot(FigureCanvas):
         # raw = mne.io.RawArray(mean_data.T, info)
         self.raw.set_montage(biosemi_montage)
 
-
-class App(QMainWindow):
-    def __init__(self):
-        super().__init__()
-        self.setWindowTitle('Dynamic Plot in Qt')
-        self.setGeometry(100, 100, 800, 600)
-        
-        central_widget = QWidget(self)
-        self.setCentralWidget(central_widget)
-        
-        layout = QVBoxLayout(central_widget)
-        self.plot_canvas = VisualizerTopoPlot(central_widget)
-        layout.addWidget(self.plot_canvas)
-        
-        self.show()
-
-if __name__ == '__main__':
-    streams = g.lsl_handler.get_all_lsl_streams()
-    print([stream.name() for stream in streams])
-    for stream in streams:
-        g.lsl_handler.connect_to_specific_lsl_stream(stream)
-        g.lsl_handler.start_data_recording_thread(stream)
-
-    g.eeg_processor = EEGProcessor(g.lsl_handler, g.lsl_handler.get_stream_by_name("BrainVision RDA"))
-    app = QApplication(sys.argv)
-    main_app = App()
-    sys.exit(app.exec_())

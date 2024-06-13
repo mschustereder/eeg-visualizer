@@ -62,6 +62,8 @@ class EEGProcessor:
         data = self.lslhandler.get_available_data(self.stream, max_samples)
         if data:
             return self._correct_timestamps(data)
+        else: 
+            return None
 
     def get_available_eeg_data_without_timestamps(self, max_samples = SAMPLE_COUNT_MAX_QUEUE) -> List[List[float]]:
         return self.lslhandler.get_available_data_without_timestamps(self.stream, max_samples)
