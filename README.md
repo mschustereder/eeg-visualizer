@@ -28,3 +28,11 @@ We are using the ```pyside6-designer```-tool. The following commands are importa
 - Open a specific .ui-file in the designer: ```pyside6-designer <ui-file-name>.ui```
 - Convert specific .ui-file to a python file: ```pyside6-uic <ui-file-name>.ui -o <wanted-python-file-name>.py```
 - In our case: Convert .ui-file to the python file: ```pyside6-uic visualizer/visualizer.ui -o visualizer/visualizer.py```
+
+## Infos regarding the channel_configuration.json file
+
+This file should represent the relationship between the order of the sent data and the corresponding channel. So it translates which channel is first in the transmitted data array, which is second and so on. The numbers, or the key values itself are not really important, what matters is the order of the channels being correct.
+
+The montage can be changed in globals.py with the USED_MNE_MONTAGE constant.
+
+There is also the possibilty to try to read the channels info from the lsl stream which can be done by setting the global variable GET_LAYOUT_FROM_JSON to False. Note that for this to work, the channel names need to be configured beforehand.

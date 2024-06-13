@@ -6,6 +6,8 @@ import numpy as np
 import mne
 import matplotlib.pyplot as plt
 from dataclasses import dataclass
+import json
+import visualizer.globals as g
 
 
 DELTA_BAND = (0.1,4)
@@ -34,11 +36,17 @@ class EEGProcessor:
         inlet = lslhandler.get_inlet(stream)
         info = inlet.info()
         channels = info.desc().child('channels').child('channel')
-        while channels.name() == 'channel':
-            label = channels.child_value('label')
-            if label:
-                self.eeg_layout.append(label)
-            channels = channels.next_sibling()
+        if g.GET_LAYOUT_FROM_JSON:
+            with open('channel_config.json', 'r') as json_file:
+                config = json.load(json_file)
+            for channel in config.values():
+                self.eeg_layout.append(channel)
+        else:
+            while channels.name() == 'channel':
+                label = channels.child_value('label')
+                if label:
+                    self.eeg_layout.append(label)
+                channels = channels.next_sibling()
         
     lslhandler : LslHandler
     stream : StreamInfo
@@ -48,6 +56,9 @@ class EEGProcessor:
 
     def get_eeg_layout(self):
         return self.eeg_layout
+    
+    def get_sampling_frequency(self):
+        return self.sampling_frequency
 
     def _correct_timestamps(self, list_to_change: List[List[float]]) -> List[List[float]]:
         for index,timestamp in enumerate(list_to_change):

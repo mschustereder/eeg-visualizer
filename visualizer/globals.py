@@ -1,6 +1,6 @@
 from  lslHandler.lslHandler import LslHandler
 from signalProcessor.EEGProcessor import EEGProcessor
-from signalProcessor.HRProcessor import HRProcessor
+# from signalProcessor.HRProcessor import HRProcessor
 
 #CONSTANTS
 
@@ -28,6 +28,9 @@ lsl_handler = LslHandler()
 
 #global eeg processor object
 eeg_processor : EEGProcessor = None
-hr_processor : HRProcessor = None
+hr_processor  = None
 
- 
+MONTAGES = ["biosemi64", "standard_1020"]
+
+USED_MNE_MONTAGE = MONTAGES[0]
+GET_LAYOUT_FROM_JSON = True
