@@ -40,7 +40,7 @@ class HRProcessor:
         if sample != None:
             this_rr = sample[0][0]  # RR peaks in ms
             rr_intervals = np.array(rr_intervals)
-            rr_intervals = remove_ectopic_beats(rr_intervals)
+            rr_intervals = remove_ectopic_beats(rr_intervals, verbose= False)
             rr_intervals = interpolate_nan_values(rr_intervals)
             rr_data_buffer.append(this_rr)
             return rr_intervals

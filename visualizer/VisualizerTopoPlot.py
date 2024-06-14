@@ -1,62 +1,105 @@
-import sys
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from signalProcessor.EEGProcessor import *
-from lslHandler.lslHandler import LslHandler
 from signalProcessor.EEGProcessor import EEGProcessor
 import visualizer.globals as g
-
+import threading
+from pyqtgraph.Qt import QtCore
+import time
+from datetime import datetime
 class VisualizerTopoPlot(FigureCanvas):
+
+    update_graph_signal = QtCore.Signal()
+
     def __init__(self, parent=None):
-        self.eegprocessor = g.eeg_processor
+        self.eeg_processor = g.eeg_processor
+        self.eeg_processor_lock = g.eeg_processor_lock
         self.window_size = g.DEFAULT_FFT_SAMPLES
-        first_data = g.eeg_processor.get_specific_amount_of_eeg_samples_without_timestamps(self.window_size)
-        self.data = first_data
-        self.channel_names = g.eeg_processor.get_eeg_layout()
-        self.set_montage(first_data)
+        self.channel_names = self.eeg_processor.get_eeg_layout()
         self.filter = Filter.NoNe
+        self.initial_plot(parent)
+
+        self.graph_parameter_lock = threading.Lock()
+        self.thread_end_event = threading.Event()
+        self.update_graph_signal.connect(self.update_plot)
+        self.processor_thread = threading.Thread(target=self.data_processing_thread)
+        self.plotting_done_cond = threading.Condition()
+        self.plotting_done = False
+
+
+        self.processor_thread.start()
+        # self.timer = self.fig.canvas.new_timer(interval=g.GRAPH_UPDATE_PAUSE_S)  # Update every 50 ms
+        # self.timer.add_callback(self.update_plot)
+        # self.timer.start()
+    
+    def initial_plot(self, parent):
         self.fig, self.ax = plt.subplots()
         super(VisualizerTopoPlot, self).__init__(self.fig)
         self.setParent(parent)
 
+        first_data = self.eeg_processor.get_specific_amount_of_eeg_samples_without_timestamps(self.window_size)
+        self.data = first_data
+        self.set_montage(first_data)
 
-        filtered_data = self.eegprocessor.filter_eeg_data(self.data, self.filter)
+        filtered_data = self.eeg_processor.filter_eeg_data(self.data, self.filter)
         mean_ch = np.mean(np.array(filtered_data), axis=0) 
-        # mean_ch = np.mean(np.array(self.data), axis=0) 
 
         im, cn = mne.viz.plot_topomap(mean_ch, self.raw.info,axes=self.ax ,show=False, names = self.channel_names)
         self.cbar = self.fig.colorbar(im, ax=self.ax)
         self.cbar.set_label("µV")
                 
-        self.timer = self.fig.canvas.new_timer(interval=g.GRAPH_UPDATE_PAUSE_S)  # Update every 50 ms
-        self.timer.add_callback(self.update_plot)
-        self.timer.start()
-    
-    eegprocessor : EEGProcessor
+
+    def data_processing_thread(self):
+        while not self.thread_end_event.is_set():
+            # print(f"thread: {datetime.now().time()}")
+            with self.eeg_processor_lock:
+                new_data = g.eeg_processor.get_available_eeg_data_without_timestamps(self.window_size)
+            
+            with self.graph_parameter_lock:
+                self.data = self.data[len(new_data):]
+                self.data += new_data
+                # print(len(self.data))
+                
+                filtered_data = self.eeg_processor.filter_eeg_data(self.data, self.filter)
+                self.mean_ch = np.mean(np.array(filtered_data), axis=0) 
+
+            self.update_graph_signal.emit()
+
+            self.plotting_done_cond.acquire()
+            while self.plotting_done == False:
+                self.plotting_done_cond.wait()
+            self.plotting_done_cond.release()
+
+            time.sleep(g.GRAPH_UPDATE_PAUSE_S)
 
     def update_plot(self):
-        new_data = g.eeg_processor.get_available_eeg_data_without_timestamps(self.window_size)
-        self.data = self.data[len(new_data):]
-        self.data += new_data
+        # print(f"update: {datetime.now().time()}")
+        with self.graph_parameter_lock:
+            self.ax.clear()
+            im, cn = mne.viz.plot_topomap(self.mean_ch, self.raw.info,axes=self.ax ,show=False, names = self.channel_names)
+            self.cbar.update_normal(im)
         
-        filtered_data = self.eegprocessor.filter_eeg_data(self.data, self.filter)
-        mean_ch = np.mean(np.array(filtered_data), axis=0) 
-        # mean_ch = np.mean(np.array(self.data), axis=0)
-
-        self.ax.clear()
-        im, cn = mne.viz.plot_topomap(mean_ch, self.raw.info,axes=self.ax ,show=False, names = self.channel_names)
-        self.cbar.update_normal(im)
-       
-        self.ax.figure.canvas.draw()
-        self.ax.figure.canvas.flush_events()
+            self.ax.figure.canvas.draw()
+            self.ax.figure.canvas.flush_events()
+        
+        self.plotting_done_cond.acquire()
+        self.plotting_done = True
+        self.plotting_done_cond.notify()
+        self.plotting_done_cond.release()
 
     def set_window_size(self, new_window_size):
-        self.window_size = new_window_size
-        self.data = g.eeg_processor.get_specific_amount_of_eeg_samples_without_timestamps(new_window_size)
+        with self.graph_parameter_lock:
+            if new_window_size < self.window_size: #if window gets smaller just cut len of data_array
+                self.data = self.data[:new_window_size]
+            else:
+                size_to_additionally_append = new_window_size - self.window_size
+                self.data += g.eeg_processor.get_specific_amount_of_eeg_samples_without_timestamps(size_to_additionally_append)
+            self.window_size = new_window_size
 
     def set_filter(self, filter: Filter):
-        self.filter = filter
+        with self.graph_parameter_lock:
+            self.filter = filter
         
     def set_montage(self, data):
         montage = mne.channels.make_standard_montage(g.USED_MNE_MONTAGE)  # set a montage, see mne document

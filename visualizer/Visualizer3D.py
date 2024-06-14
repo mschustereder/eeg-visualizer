@@ -115,13 +115,13 @@ class Visualizer3D(gl.GLViewWidget):
     update_spectrum_signal = QtCore.Signal()
     loading_buffer_start_signal = QtCore.Signal()
     loading_buffer_end_signal = QtCore.Signal()
-    eeg_processor : EEGProcessor
+    # eeg_processor : EEGProcessor
     #the values for x, y and z than can be seen from the camera
     x_range = 48
     y_range = 40
     z_range = 10
     
-    def __init__(self, eeg_processor, color_bar : Visualizer3DColorBar= None, cm = pg.colormap.get('turbo')):
+    def __init__(self, color_bar : Visualizer3DColorBar= None, cm = pg.colormap.get('turbo')):
         super().__init__()     
         self.setBackgroundColor(255, 255, 255)
         self.cm = cm
@@ -131,8 +131,8 @@ class Visualizer3D(gl.GLViewWidget):
         self.plot_item = gl.GLSurfacePlotItem(np.zeros(10), np.zeros(10), np.zeros((10, 10)))
         self.addItem(self.plot_item)
         self.graph_parameter_lock = threading.Lock()
-        self.eeg_processor_lock = threading.Lock()
-        self.eeg_processor = eeg_processor
+        self.eeg_processor = g.eeg_processor
+        self.eeg_processor_lock = g.eeg_processor_lock
         self.initialize(g.DEFAULT_FFT_SAMPLES, g.DEFAULT_SECONDS_SHOWN_IN_SPECTROGRAM)
         self.setCameraPosition(pos=QtGui.QVector3D(0, 0, 5), distance=40, elevation=7, azimuth=0)
         self.scale_factor_x = 1

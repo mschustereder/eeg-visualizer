@@ -1,6 +1,7 @@
 from  lslHandler.lslHandler import LslHandler
 from signalProcessor.EEGProcessor import EEGProcessor
-# from signalProcessor.HRProcessor import HRProcessor
+from signalProcessor.HRProcessor import HRProcessor
+import threading
 
 #CONSTANTS
 
@@ -28,7 +29,11 @@ lsl_handler = LslHandler()
 
 #global eeg processor object
 eeg_processor : EEGProcessor = None
-hr_processor  = None
+hr_processor : HRProcessor = None
+
+eeg_processor_lock = threading.Lock()
+hr_processor_lock = threading.Lock()
+
 
 MONTAGES = ["biosemi64", "standard_1020"]
 

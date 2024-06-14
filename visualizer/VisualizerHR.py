@@ -19,7 +19,7 @@ class VisualizerHR(pg.PlotWidget):
 
     update_graph_signal = QtCore.Signal()
 
-    def __init__(self, hr_processor, parent=None, background='default', plotItem=None, **kargs):
+    def __init__(self, parent=None, background='default', plotItem=None, **kargs):
         super().__init__(parent, background, plotItem, **kargs)
         self.showGrid(x = True, y = True)
         self.setBackground((255, 255, 255))
@@ -31,8 +31,8 @@ class VisualizerHR(pg.PlotWidget):
         self.set_bio_variable(HR_BIO_VARIABLE.BPM)
         #time axis label
         self.setLabel('bottom', 'Time', units ='s')
-        self.hr_processor_lock = threading.Lock()
-        self.hr_processor = hr_processor
+        self.hr_processor_lock = g.hr_processor_lock
+        self.hr_processor = g.hr_processor
 
         self.graph_parameter_lock = threading.Lock()
         self.thread_end_event = threading.Event()
