@@ -68,11 +68,11 @@ class YAxis():
         self.x_label_offset = 5
         self.z_label_offset = -1.5
 
-        self.axe = CustomAxis()
+        self.axe = CustomAxis(color=(255, 255, 255))
         self.axe.setSize(0, 0, 0)
         self.parent.addItem(self.axe)
 
-        self.label = gl.GLTextItem(text = label, color = (0, 0, 0), font = QtGui.QFont("Helvetica", 12))
+        self.label = gl.GLTextItem(text = label, color = (255, 255, 255), font = QtGui.QFont("Helvetica", 12))
         self.label.translate(self.x_label_offset, 0, self.z_label_offset)
         self.parent.addItem(self.label)
 
@@ -86,7 +86,7 @@ class YAxis():
         positions = []
         #add ticks on their respective position
         for tick in ticks:
-            tick_item = gl.GLTextItem(color = (0, 0, 0), font = QtGui.QFont("Helvetica", 12))
+            tick_item = gl.GLTextItem(color = (255, 255, 255), font = QtGui.QFont("Helvetica", 12))
             tick_item.setData(text = str(tick))
             tick_item.translate(self.x_tick_offset, (tick+zero_pos)*scaling_factor, self.z_tick_offset)
             self.parent.addItem(tick_item)
@@ -124,7 +124,7 @@ class Visualizer3D(gl.GLViewWidget):
     
     def __init__(self, eeg_processor, color_bar : Visualizer3DColorBar= None, cm = pg.colormap.get('turbo')):
         super().__init__()     
-        self.setBackgroundColor(255, 255, 255)
+        self.setBackgroundColor(0, 0, 0)
         self.cm = cm
         self.color_bar = color_bar
         if self.color_bar is not None:
@@ -410,7 +410,6 @@ class Visualizer3DLine(Visualizer3D):
 
         self.traces = []
         super().__init__(eeg_processor, color_bar, cm)
-        self.setBackgroundColor(0, 0, 0)
 
 
     def update_spectrum_from_thread(self):
