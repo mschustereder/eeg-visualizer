@@ -194,8 +194,8 @@ class EegVisualizerMainWindow(QMainWindow):
 
     def setup_visualizers_3d_and_hr():
         visualizer_3d_color_bar = Visualizer3DColorBar()
-        visualizer_3d = None#Visualizer3D(gl.eeg_processor, visualizer_3d_color_bar)
-        visualizer_hr = VisualizerHR(gl.hr_processor)
+        visualizer_3d = Visualizer3D(visualizer_3d_color_bar)
+        visualizer_hr = VisualizerHR()
         visualizer_topoplot = VisualizerTopoPlot()
 
         return visualizer_3d, visualizer_3d_color_bar, visualizer_hr, visualizer_topoplot
@@ -343,7 +343,14 @@ class EegVisualizerMainWindow(QMainWindow):
         return sub_plot_configuration
     
     def update_main_plot(self, plot_identifier):
-        widget_to_use_as_main_plot = self.visualizer_3d_wrapper_widget if plot_identifier == 'Spectrogram' else self.visualizer_topo
+        if plot_identifier == 'Spectrogram':
+            widget_to_use_as_main_plot = self.visualizer_3d_wrapper_widget
+            self.visualizer_topo.stop_and_wait_for_process_thread()
+            self.visualizer_3d.start_thread()
+        else:
+            widget_to_use_as_main_plot = self.visualizer_topo
+            self.visualizer_3d.stop_and_wait_for_process_thread()
+            self.visualizer_topo.start_thread()
 
         if self.main_plot_container_layout.count() > 0:
             current_widget = self.main_plot_container_layout.itemAt(0).widget()

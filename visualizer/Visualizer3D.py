@@ -162,10 +162,9 @@ class Visualizer3D(gl.GLViewWidget):
 
         self.thread_end_event = threading.Event()
         self.update_spectrum_signal.connect(self.update_spectrum_from_thread)
-        self.processor_thread = threading.Thread(target=self.processor_thread_func)
         self.plotting_done_cond = threading.Condition()
         self.plotting_done = False
-        self.processor_thread.start()
+        self.start_thread()
 
     def init_frequencies(self):
         sampling_rate = self.eeg_processor.stream.nominal_srate()
@@ -362,4 +361,8 @@ class Visualizer3D(gl.GLViewWidget):
     def stop_and_wait_for_process_thread(self):
         self.thread_end_event.is_set()
         self.processor_thread.join()
+
+    def start_thread(self):
+        self.processor_thread = threading.Thread(target=self.processor_thread_func)
+        self.processor_thread.start()
 

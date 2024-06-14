@@ -23,12 +23,10 @@ class VisualizerTopoPlot(FigureCanvas):
         self.graph_parameter_lock = threading.Lock()
         self.thread_end_event = threading.Event()
         self.update_graph_signal.connect(self.update_plot)
-        self.processor_thread = threading.Thread(target=self.data_processing_thread)
         self.plotting_done_cond = threading.Condition()
         self.plotting_done = False
 
 
-        self.processor_thread.start()
         # self.timer = self.fig.canvas.new_timer(interval=g.GRAPH_UPDATE_PAUSE_S)  # Update every 50 ms
         # self.timer.add_callback(self.update_plot)
         # self.timer.start()
@@ -120,3 +118,10 @@ class VisualizerTopoPlot(FigureCanvas):
         # raw = mne.io.RawArray(mean_data.T, info)
         self.raw.set_montage(montage)
 
+    def stop_and_wait_for_process_thread(self):
+        self.thread_end_event.is_set()
+        self.processor_thread.join()
+
+    def start_thread(self):
+        self.processor_thread = threading.Thread(target=self.data_processing_thread)
+        self.processor_thread.start()
