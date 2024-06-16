@@ -51,9 +51,7 @@ class VisualizerHR(pg.PlotWidget):
             if g.hr_processor == None:
                 time.sleep(g.GRAPH_UPDATE_PAUSE_S)
                 return
-
             bpm, rmssd, sdnn, poi_rat = g.hr_processor.get_all_bio_vars()
-
             self.hr_processor_lock.release()
 
             self.graph_parameter_lock.acquire()
