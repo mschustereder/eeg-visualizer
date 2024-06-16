@@ -194,8 +194,8 @@ class EegVisualizerMainWindow(QMainWindow):
 
     def setup_visualizers_3d_and_hr():
         visualizer_3d_color_bar = Visualizer3DColorBar()
-        visualizer_3d = Visualizer3DLine(gl.eeg_processor, visualizer_3d_color_bar)
-        visualizer_hr = VisualizerHR(gl.hr_processor)
+        visualizer_3d = Visualizer3DLine(visualizer_3d_color_bar)
+        visualizer_hr = VisualizerHR()
         visualizer_topoplot = VisualizerTopoPlot()
 
         return visualizer_3d, visualizer_3d_color_bar, visualizer_hr, visualizer_topoplot
@@ -392,14 +392,20 @@ class EegVisualizerMainWindow(QMainWindow):
     def handle_filter_change(self, filter_identifier):
         if filter_identifier == "Delta":
             self.visualizer_topo.set_filter(Filter.Delta)
+            self.visualizer_3d.set_filter_type(Filter.Delta)
         elif filter_identifier == "Theta":
             self.visualizer_topo.set_filter(Filter.Theta)
+            self.visualizer_3d.set_filter_type(Filter.Theta)
         elif filter_identifier == "Alpha":
             self.visualizer_topo.set_filter(Filter.Alpha)
+            self.visualizer_3d.set_filter_type(Filter.Alpha)
         elif filter_identifier == "Beta":
             self.visualizer_topo.set_filter(Filter.Beta)
+            self.visualizer_3d.set_filter_type(Filter.Beta)
         elif filter_identifier == "Gamma":
             self.visualizer_topo.set_filter(Filter.Gamma)
+            self.visualizer_3d.set_filter_type(Filter.Gamma)
         elif filter_identifier == "All":
             self.visualizer_topo.set_filter(Filter.NoNe)
+            self.visualizer_3d.set_filter_type(Filter.NoNe)
         else: raise Exception()

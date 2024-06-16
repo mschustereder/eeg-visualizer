@@ -391,8 +391,17 @@ class Visualizer3D(gl.GLViewWidget):
         self.frequency_ticks.set_fontsizes_from_pixel_size(self.pixelSize(QtGui.QVector3D(0, 0, 0)))
 
     def stop_and_wait_for_process_thread(self):
-        self.thread_end_event.is_set()
+        if hasattr(self, "processor_thread") and not self.processor_thread.is_alive(): return
+        self.thread_end_event.set()
         self.processor_thread.join()
+
+    def start_thread(self):
+        if hasattr(self, "processor_thread") and self.processor_thread.is_alive(): return
+        print("starting thread")
+        self.processor_thread = threading.Thread(target=self.processor_thread_func)
+        self.thread_end_event.clear()
+        self.processor_thread.start()
+
 
 
 
@@ -434,10 +443,10 @@ class Visualizer3DSurface(Visualizer3D):
 class Visualizer3DLine(Visualizer3D):
 
 
-    def __init__(self, eeg_processor, color_bar: Visualizer3DColorBar = None, cm=pg.colormap.get('turbo')):
+    def __init__(self, color_bar: Visualizer3DColorBar = None, cm=pg.colormap.get('turbo')):
 
         self.traces = []
-        super().__init__(eeg_processor, color_bar, cm)
+        super().__init__(color_bar, cm)
         self.setBackgroundColor(0, 0, 0)
 
 
@@ -449,7 +458,7 @@ class Visualizer3DLine(Visualizer3D):
             for _ in range(len(self.traces), len(self.data.fft_vizualizer_values)):
                 self.traces.append(gl.GLLinePlotItem(width=2, antialias=True))
                 self.setup_plot_item(self.traces[-1])
-            print(f"added {diff} traces")
+            # print(f"added {diff} traces")
 
         elif len(self.traces) > len(self.data.fft_vizualizer_values):
             diff = len(self.traces)-len(self.data.fft_vizualizer_values)
@@ -457,7 +466,7 @@ class Visualizer3DLine(Visualizer3D):
             for item in items_to_remove:
                 self.removeItem(item)
             self.traces = self.traces[0: len(self.data.fft_vizualizer_values)]
-            print(f"removed {diff} traces")
+            # print(f"removed {diff} traces")
 
         x = np.array(self.data.fft_timestamps)
         y = np.array(self.data.frequencies)
@@ -485,7 +494,5 @@ class Visualizer3DLine(Visualizer3D):
         self.plotting_done_cond.notify()
         self.plotting_done_cond.release()    
         
-        def start_thread(self):
-        self.processor_thread = threading.Thread(target=self.processor_thread_func)
-        self.processor_thread.start()
+
 

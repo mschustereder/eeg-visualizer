@@ -119,9 +119,12 @@ class VisualizerTopoPlot(FigureCanvas):
         self.raw.set_montage(montage)
 
     def stop_and_wait_for_process_thread(self):
-        self.thread_end_event.is_set()
+        if hasattr(self, "processor_thread") and not self.processor_thread.is_alive(): return
+        self.thread_end_event.set()
         self.processor_thread.join()
 
     def start_thread(self):
+        if hasattr(self, "processor_thread") and self.processor_thread.is_alive(): return
         self.processor_thread = threading.Thread(target=self.data_processing_thread)
+        self.thread_end_event.clear()
         self.processor_thread.start()

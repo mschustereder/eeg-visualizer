@@ -145,7 +145,7 @@ class VisualizerHR(pg.PlotWidget):
         #only scale up after enough time has passed
         if (settings.below_max_count > g.HR_GRAPH_Y_UP_SCALE_THRESHOLD):
             settings.max *= g.HR_GRAPH_Y_UP_SCALE_FACTOR
-            print("scale up y")
+            # print("scale up y")
         
 
     def _add_data(self, new_timestamp, timestamps, new_value, values):
