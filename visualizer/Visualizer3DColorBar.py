@@ -14,6 +14,9 @@ class Visualizer3DColorBar(QtWidgets.QWidget):
     def paintEvent(self, event: QtGui.QPaintEvent) -> None:
         #draw gradient
         painter = QtGui.QPainter(self)
+        background = QtCore.QRect(0, 0, self.width(), self.height())
+        painter.fillRect(background, QtGui.QColor("black"))
+        painter.setPen("white")
         stops = self.cm.getStops(pg.ColorMap.FLOAT)
         colors = self.cm.getColors(pg.ColorMap.QCOLOR)
         gradient = QtGui.QLinearGradient(0, 0, 0, self.height())
@@ -29,7 +32,7 @@ class Visualizer3DColorBar(QtWidgets.QWidget):
         rect_grade = QtCore.QRect(margin_x, margin_y + text_size_y, gradient_width, self.height()-2*margin_y-text_size_y)
         border_width = 1
         rect_border = QtCore.QRect(margin_x-border_width, margin_y-border_width + text_size_y, self.width()-text_field_size-3*margin_x + 2*border_width, self.height()-2*margin_y+2*border_width-text_size_y)
-        painter.fillRect(rect_border, QtGui.QColor("black"))
+        painter.fillRect(rect_border, QtGui.QColor("white"))
         painter.fillRect(rect_grade, gradient)
 
         #draw unit label

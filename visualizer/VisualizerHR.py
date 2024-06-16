@@ -22,8 +22,8 @@ class VisualizerHR(pg.PlotWidget):
     def __init__(self, parent=None, background='default', plotItem=None, **kargs):
         super().__init__(parent, background, plotItem, **kargs)
         self.showGrid(x = True, y = True)
-        self.setBackground((255, 255, 255))
-        self.line_plot = self.plot(np.zeros(10), np.zeros(10), pen = pg.mkPen(color = (0, 0, 255), width = 2))
+        self.setBackground((0, 0, 0))
+        self.line_plot = self.plot(np.zeros(10), np.zeros(10), pen = pg.mkPen(color = (0, 255, 0), width = 2))
         self.hideButtons()
         self.setMouseEnabled(False, False)
         self.data = HRGraphFrame()
@@ -57,8 +57,6 @@ class VisualizerHR(pg.PlotWidget):
             self.graph_parameter_lock.acquire()
 
             timestamp = time.time() - self.graph_start_time
-            # if bpm is not None:
-            #     bpm = bpm[0][0]
 
             self._add_data(timestamp, self.data.timestamps_bpm, bpm, self.data.bpm_values)
             self._add_data(timestamp, self.data.timestamps_rmssd, rmssd, self.data.rmssd_values)
