@@ -229,6 +229,9 @@ class EegVisualizerMainWindow(QMainWindow):
             stream_selection_layout.addWidget(new_radio_button)
             new_radio_button.clicked.connect(callback_function)
 
+        if len(lsl_streams) == 0:
+            stream_selection_layout.addWidget(QLabel("No streams found."))
+
         stream_selection_container.setLayout(stream_selection_layout)
 
         return stream_selection_container
@@ -243,6 +246,8 @@ class EegVisualizerMainWindow(QMainWindow):
         stream_types = [stream_type for stream_type in EegVisualizerMainWindow.StreamType]
         for stream_type in stream_types:
             layout.addWidget(self.get_stream_selection_for(stream_type))
+
+        start_button.setEnabled(len(EegVisualizerMainWindow.get_all_lsl_streams()) != 0)
 
         layout.addWidget(start_button)
 
