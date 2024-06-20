@@ -84,11 +84,16 @@ class EegVisualizerMainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
 
+        self.all_lsl_streams = None
+
         self.setWindowTitle("EEG Visualizer")
 
         self.central_widget = QWidget()
         self.setCentralWidget(self.central_widget)
         self.central_layout = QVBoxLayout(self.central_widget)
+
+        for i in range(3):
+            _ = self.get_all_lsl_streams(search_again=True)
 
         self.stream_selection_card = self.get_stream_selection_card()
 
@@ -98,8 +103,8 @@ class EegVisualizerMainWindow(QMainWindow):
 
         self.show_stream_selection_view()
 
-    def get_specific_lsl_stream(stream_name):
-        all_lsl_streams = EegVisualizerMainWindow.get_all_lsl_streams()
+    def get_specific_lsl_stream(self, stream_name):
+        all_lsl_streams = self.get_all_lsl_streams()
         first_match = next((stream for stream in all_lsl_streams if stream.name() == stream_name), None)
 
         if first_match is None:
@@ -107,11 +112,11 @@ class EegVisualizerMainWindow(QMainWindow):
         
         return first_match
 
-    def connect_to_selected_streams(eeg_stream_name, hr_stream_name, rr_stream_name):
+    def connect_to_selected_streams(self, eeg_stream_name, hr_stream_name, rr_stream_name):
         stream_names = [eeg_stream_name, hr_stream_name, rr_stream_name]
         if any(stream_name is None for stream_name in stream_names): return
 
-        streams = [EegVisualizerMainWindow.get_specific_lsl_stream(stream_name) for stream_name in stream_names]
+        streams = [self.get_specific_lsl_stream(stream_name) for stream_name in stream_names]
         if any(stream is None for stream in streams): return
 
         for stream in streams:
@@ -147,7 +152,7 @@ class EegVisualizerMainWindow(QMainWindow):
         self.stream_selection_card.move((window_width - card_width) // 2, (window_height - card_height) // 2)
 
     def show_main_layout(self):
-        EegVisualizerMainWindow.connect_to_selected_streams(self.selected_eeg_stream, self.selected_hr_stream, self.selected_rr_stream)
+        self.connect_to_selected_streams(self.selected_eeg_stream, self.selected_hr_stream, self.selected_rr_stream)
 
         current_widget = self.central_layout.itemAt(0).widget()
         current_widget.hide()
@@ -200,9 +205,11 @@ class EegVisualizerMainWindow(QMainWindow):
 
         return visualizer_3d, visualizer_3d_color_bar, visualizer_hr, visualizer_topoplot
     
-    def get_all_lsl_streams():
-        streams = gl.lsl_handler.get_all_lsl_streams()
-        return streams
+    def get_all_lsl_streams(self, search_again=False):
+        if not self.all_lsl_streams or search_again:
+            self.all_lsl_streams = gl.lsl_handler.get_all_lsl_streams()        
+
+        return self.all_lsl_streams
 
     def get_stream_selection_for(self, stream_type: StreamType):
         stream_selection_container = QWidget()
@@ -212,7 +219,7 @@ class EegVisualizerMainWindow(QMainWindow):
 
         stream_selection_layout.addWidget(selection_title)
 
-        lsl_streams = EegVisualizerMainWindow.get_all_lsl_streams()
+        lsl_streams = self.get_all_lsl_streams()
 
         callback_function = None
         if stream_type == EegVisualizerMainWindow.StreamType.EEG:
@@ -247,7 +254,7 @@ class EegVisualizerMainWindow(QMainWindow):
         for stream_type in stream_types:
             layout.addWidget(self.get_stream_selection_for(stream_type))
 
-        start_button.setEnabled(len(EegVisualizerMainWindow.get_all_lsl_streams()) != 0)
+        start_button.setEnabled(len(self.get_all_lsl_streams()) != 0)
 
         layout.addWidget(start_button)
 
