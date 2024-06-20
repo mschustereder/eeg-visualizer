@@ -9,13 +9,7 @@ from datetime import datetime
 import time
 import numpy as np
 
-SAMPLE_COUNT_MAX_QUEUE = 1024
-
-# @dataclass
-# class DataQueueStruct:
-#     data_queue : queue.Queue = field(default_factory=queue.Queue)
-#     data_queue_lock : threading.Lock = field(default_factory=threading.Lock)
-#     queue_length : int = 0
+SAMPLE_COUNT_MAX_QUEUE = 500 #for 250Hz this would be 2 seconds worth of data
 
 class LslHandler:
     def __init__(self):
@@ -61,6 +55,9 @@ class LslHandler:
             if data_temp:
                 data += data_temp
                 timestamps += samples_temp
+            missing_samples = required_sample_count - len(data)
+            # print(f"Going to sleep for {missing_samples / stream.nominal_srate()} seconds")
+            time.sleep(missing_samples / stream.nominal_srate())
         assert len(data) == required_sample_count
         return data, timestamps
 

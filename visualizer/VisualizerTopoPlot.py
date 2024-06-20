@@ -51,7 +51,7 @@ class VisualizerTopoPlot(FigureCanvas):
         while not self.thread_end_event.is_set():
             # print(f"thread: {datetime.now().time()}")
             with self.eeg_processor_lock:
-                new_data = self.eeg_processor.get_available_eeg_data_without_timestamps(self.window_size)
+                new_data = self.eeg_processor.get_specific_amount_of_eeg_samples_without_timestamps(self.window_size //4)
                 if not new_data: continue
             
                 with self.graph_parameter_lock:
