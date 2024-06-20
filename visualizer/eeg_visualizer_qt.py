@@ -294,7 +294,7 @@ class EegVisualizerMainWindow(QMainWindow):
         main_plot_dropdown.currentIndexChanged.connect(lambda index: self.update_main_plot(main_plot_dropdown.itemText(index)))
         
         frequency_band_dropdown = QComboBox()
-        frequency_band_dropdown.addItems(['All','Delta','Theta' ,'Alpha', 'Beta', 'Gamma'])
+        frequency_band_dropdown.addItems(['All','Delta','Theta' ,'Alpha', 'Beta', 'Gamma', 'Variable'])
         frequency_band_dropdown.setStyleSheet("margin-top: 10px;")
         frequency_band_label = QLabel("Frequency Band:")
         frequency_band_label.setStyleSheet("border: none;")
@@ -302,6 +302,26 @@ class EegVisualizerMainWindow(QMainWindow):
 
         frequency_band_dropdown.currentIndexChanged.connect(lambda index: self.handle_filter_change(frequency_band_dropdown.itemText(index)))
         
+        lower_freq_input = QSpinBox()
+        lower_freq_input.setRange(1, 100)
+        lower_freq_input.setValue(Filter.Variable[0])
+        lower_freq_input.setStyleSheet("margin-top: 10px;")
+        lower_freq_label = QLabel("Lower Cutoff:")
+        lower_freq_label.setStyleSheet("border: none;")
+        form_layout.addRow(lower_freq_label, lower_freq_input)
+
+        lower_freq_input.valueChanged.connect(self.handle_variable_filter_low_freq_change)
+
+        higher_freq_input = QSpinBox()
+        higher_freq_input.setRange(1, 100)
+        higher_freq_input.setValue(Filter.Variable[1])
+        higher_freq_input.setStyleSheet("margin-top: 10px;")
+        higher_freq_label = QLabel("Higher Cutoff:")
+        higher_freq_label.setStyleSheet("border: none;")
+        form_layout.addRow(higher_freq_label, higher_freq_input)
+
+        higher_freq_input.valueChanged.connect(self.handle_variable_filter_high_freq_change)
+
         seconds_shown_input = QSpinBox()
         seconds_shown_input.setRange(1, 100)
         seconds_shown_input.setValue(DEFAULT_SECONDS_SHOWN)
@@ -413,4 +433,14 @@ class EegVisualizerMainWindow(QMainWindow):
         elif filter_identifier == "All":
             self.visualizer_topo.set_filter(Filter.NoNe)
             self.visualizer_3d.set_filter_type(Filter.NoNe)
+        elif filter_identifier == "Variable":
+            self.visualizer_topo.set_filter(Filter.Variable)
+            self.visualizer_3d.set_filter_type(Filter.Variable)
         else: raise Exception()
+
+
+    def handle_variable_filter_low_freq_change(self, lower_freq):
+        Filter.Variable[0] = lower_freq
+
+    def handle_variable_filter_high_freq_change(self, higher_freq):
+        Filter.Variable[1] = higher_freq

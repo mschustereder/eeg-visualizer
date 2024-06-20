@@ -24,6 +24,7 @@ class Filter:
     Beta : Tuple = BETA_BAND
     Gamma : Tuple = GAMMA_BAND
     NoNe: Tuple = (0,100)
+    Variable = [4,100] #per default cut Delta, but make it changeable -needs to be list since tuples are not changeable in python
 
 
 #Source: https://de.wikipedia.org/wiki/Elektroenzephalografie#EEG-Frequenzb%C3%A4nder_und_Graphoelemente
