@@ -452,8 +452,7 @@ class EegVisualizerMainWindow(QMainWindow):
             new_window_size = 2 ** exponent
 
             self.visualizer_3d.set_fft_buffer_len(new_window_size)
-            #self.visualizer_topo.set_window_size(new_window_size)
-            # @todo: change window size for spectrogram and topoplot
+            self.visualizer_topo.set_window_size(new_window_size)
         except ValueError:
             pass
 
