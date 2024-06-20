@@ -12,7 +12,6 @@ from signalProcessor.EEGProcessor import EEGProcessor, Filter
 from signalProcessor.HRProcessor import HRProcessor
 from enum import Enum
 
-
 FONT_SIZE_H1 = 20
 FONT_SIZE_H2 = 18
 FONT_SIZE_P = 14
@@ -81,6 +80,24 @@ def execute_qt_app():
     sys.exit(app.exec())
 
 class EegVisualizerMainWindow(QMainWindow):
+    class BioVariableOptions(Enum):
+        BPM = "BPM"
+        RMSSD = "RMSSD"
+        SDNN = "SDNN"
+        Poin_care_ratio = "Poin_care_ratio"
+
+    class MainPlotOptions(Enum):
+        Spectrogram = "Spectrogram"
+        Topoplot = "Topoplot"
+
+    class FilterOptions(Enum):
+        Manual_filter = "Manual_filter"
+        Delta = "Delta"
+        Theta = "Theta"
+        Alpha = "Alpha"
+        Beta = "Beta"
+        Gamma = "Gamma"
+        All = "All"
 
     class StreamType(Enum):
         EEG = 1
@@ -327,7 +344,8 @@ class EegVisualizerMainWindow(QMainWindow):
         form_layout = QFormLayout()
         
         main_plot_dropdown = QComboBox()
-        main_plot_dropdown.addItems(['Spectrogram', 'Topoplot'])
+        main_plot_dropdown.addItems([self.MainPlotOptions.Spectrogram.value,
+                                     self.MainPlotOptions.Topoplot.value])
         main_plot_dropdown.setStyleSheet("margin-top: 10px;")
         plot_label = QLabel("Plot:")
         plot_label.setStyleSheet("border: none;")
@@ -337,7 +355,13 @@ class EegVisualizerMainWindow(QMainWindow):
         main_plot_dropdown.currentIndexChanged.connect(lambda index: self.update_main_plot(main_plot_dropdown.itemText(index)))
         
         frequency_band_dropdown = QComboBox()
-        frequency_band_dropdown.addItems(['All','Delta','Theta' ,'Alpha', 'Beta', 'Gamma', 'Variable'])
+        frequency_band_dropdown.addItems([self.FilterOptions.Manual_filter.value,
+                                          self.FilterOptions.Delta.value,
+                                          self.FilterOptions.Theta.value,
+                                          self.FilterOptions.Alpha.value,
+                                          self.FilterOptions.Beta.value,
+                                          self.FilterOptions.Gamma.value,
+                                          self.FilterOptions.All.value])
         frequency_band_dropdown.setStyleSheet("margin-top: 10px;")
         frequency_band_label = QLabel("Frequency Band:")
         frequency_band_label.setStyleSheet("border: none;")
@@ -345,25 +369,36 @@ class EegVisualizerMainWindow(QMainWindow):
 
         frequency_band_dropdown.currentIndexChanged.connect(lambda index: self.handle_filter_change(frequency_band_dropdown.itemText(index)))
         
+        self.manual_filter_selection_container = QWidget()
+        manual_filter_selection_container_layout = QFormLayout()
+
         lower_freq_input = QSpinBox()
         lower_freq_input.setRange(1, 100)
-        lower_freq_input.setValue(Filter.Variable[0])
+        lower_freq_input.setValue(Filter.Manual[0])
         lower_freq_input.setStyleSheet("margin-top: 10px;")
         lower_freq_label = QLabel("Lower Cutoff:")
         lower_freq_label.setStyleSheet("border: none;")
-        form_layout.addRow(lower_freq_label, lower_freq_input)
+        manual_filter_selection_container_layout.addRow(lower_freq_label, lower_freq_input)
 
-        lower_freq_input.valueChanged.connect(self.handle_variable_filter_low_freq_change)
+        lower_freq_input.valueChanged.connect(self.handle_manual_filter_low_freq_change)
 
         higher_freq_input = QSpinBox()
         higher_freq_input.setRange(1, 100)
-        higher_freq_input.setValue(Filter.Variable[1])
+        higher_freq_input.setValue(Filter.Manual[1])
         higher_freq_input.setStyleSheet("margin-top: 10px;")
         higher_freq_label = QLabel("Higher Cutoff:")
         higher_freq_label.setStyleSheet("border: none;")
-        form_layout.addRow(higher_freq_label, higher_freq_input)
+        manual_filter_selection_container_layout.addRow(higher_freq_label, higher_freq_input)
 
-        higher_freq_input.valueChanged.connect(self.handle_variable_filter_high_freq_change)
+        higher_freq_input.valueChanged.connect(self.handle_manual_filter_high_freq_change)
+
+        self.manual_filter_selection_container.setLayout(manual_filter_selection_container_layout)
+
+        self.manual_filter_label = QLabel("Manual filter:")
+        self.manual_filter_label.setStyleSheet("border: none;")
+        form_layout.addRow(self.manual_filter_label, self.manual_filter_selection_container)
+
+        self.handle_filter_change(self.FilterOptions.Manual_filter.value)
 
         self.seconds_shown_input = QSpinBox()
         self.seconds_shown_input.setRange(1, 100)
@@ -395,7 +430,10 @@ class EegVisualizerMainWindow(QMainWindow):
         form_layout = QFormLayout()
         
         sub_plot_dropdown = QComboBox()
-        sub_plot_dropdown.addItems(['BPM', 'RMSSD', 'SDNN', 'Poin care ratio'])
+        sub_plot_dropdown.addItems([self.BioVariableOptions.BPM.value,
+                                    self.BioVariableOptions.RMSSD.value,
+                                    self.BioVariableOptions.SDNN.value,
+                                    self.BioVariableOptions.Poin_care_ratio.value])
         sub_plot_dropdown.setStyleSheet("margin-top: 10px;")
         plot_label = QLabel("Plot:")
         plot_label.setStyleSheet("border: none;")
@@ -411,7 +449,7 @@ class EegVisualizerMainWindow(QMainWindow):
         return sub_plot_configuration
     
     def update_main_plot(self, plot_identifier):
-        if plot_identifier == 'Spectrogram':
+        if plot_identifier == self.MainPlotOptions.Spectrogram.value:
             widget_to_use_as_main_plot = self.visualizer_3d_wrapper_widget
             self.visualizer_topo.stop_and_wait_for_process_thread()
             self.visualizer_3d.start_thread()
@@ -432,13 +470,13 @@ class EegVisualizerMainWindow(QMainWindow):
             widget_to_use_as_main_plot.show()
     
     def update_sub_plot(self, plot_identifier):
-        if plot_identifier == 'BPM':
+        if plot_identifier == self.BioVariableOptions.BPM.value:
             self.visualizer_hr.set_bio_variable(HR_BIO_VARIABLE.BPM)
-        elif plot_identifier == 'RMSSD':
+        elif plot_identifier == self.BioVariableOptions.RMSSD.value:
             self.visualizer_hr.set_bio_variable(HR_BIO_VARIABLE.RMSSD)
-        elif plot_identifier == 'SDNN':
+        elif plot_identifier == self.BioVariableOptions.SDNN.value:
             self.visualizer_hr.set_bio_variable(HR_BIO_VARIABLE.SDNN)
-        elif plot_identifier == 'Poin care ratio':
+        elif plot_identifier == self.BioVariableOptions.Poin_care_ratio.value:
             self.visualizer_hr.set_bio_variable(HR_BIO_VARIABLE.POI_RAT)
 
     def handle_seconds_shown_change(self):
@@ -461,32 +499,38 @@ class EegVisualizerMainWindow(QMainWindow):
             pass
 
     def handle_filter_change(self, filter_identifier):
-        if filter_identifier == "Delta":
+        if not filter_identifier == self.FilterOptions.Manual_filter.value:
+            self.manual_filter_selection_container.hide()
+            self.manual_filter_label.hide()
+
+        if filter_identifier == self.FilterOptions.Delta.value:
             self.visualizer_topo.set_filter(Filter.Delta)
             self.visualizer_3d.set_filter_type(Filter.Delta)
-        elif filter_identifier == "Theta":
+        elif filter_identifier == self.FilterOptions.Theta.value:
             self.visualizer_topo.set_filter(Filter.Theta)
             self.visualizer_3d.set_filter_type(Filter.Theta)
-        elif filter_identifier == "Alpha":
+        elif filter_identifier == self.FilterOptions.Alpha.value:
             self.visualizer_topo.set_filter(Filter.Alpha)
             self.visualizer_3d.set_filter_type(Filter.Alpha)
-        elif filter_identifier == "Beta":
+        elif filter_identifier == self.FilterOptions.Beta.value:
             self.visualizer_topo.set_filter(Filter.Beta)
             self.visualizer_3d.set_filter_type(Filter.Beta)
-        elif filter_identifier == "Gamma":
+        elif filter_identifier == self.FilterOptions.Gamma.value:
             self.visualizer_topo.set_filter(Filter.Gamma)
             self.visualizer_3d.set_filter_type(Filter.Gamma)
-        elif filter_identifier == "All":
+        elif filter_identifier == self.FilterOptions.All.value:
             self.visualizer_topo.set_filter(Filter.NoNe)
             self.visualizer_3d.set_filter_type(Filter.NoNe)
-        elif filter_identifier == "Variable":
-            self.visualizer_topo.set_filter(Filter.Variable)
-            self.visualizer_3d.set_filter_type(Filter.Variable)
+        elif filter_identifier == self.FilterOptions.Manual_filter.value:
+            self.visualizer_topo.set_filter(Filter.Manual)
+            self.visualizer_3d.set_filter_type(Filter.Manual)
+            self.manual_filter_selection_container.show()
+            self.manual_filter_label.show()
         else: raise Exception()
 
 
-    def handle_variable_filter_low_freq_change(self, lower_freq):
-        Filter.Variable[0] = lower_freq
+    def handle_manual_filter_low_freq_change(self, lower_freq):
+        Filter.Manual[0] = lower_freq
 
-    def handle_variable_filter_high_freq_change(self, higher_freq):
-        Filter.Variable[1] = higher_freq
+    def handle_manual_filter_high_freq_change(self, higher_freq):
+        Filter.Manual[1] = higher_freq
