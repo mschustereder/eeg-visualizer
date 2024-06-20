@@ -61,6 +61,8 @@ class VisualizerTopoPlot(FigureCanvas):
                     
                     filtered_data = self.eeg_processor.filter_eeg_data(self.data, self.filter)
                     self.mean_ch = np.mean(np.array(filtered_data), axis=0) 
+                    self.ax.clear()
+                    self.im, _ = mne.viz.plot_topomap(self.mean_ch, self.raw.info,axes=self.ax ,show=False, names = self.channel_names)
 
             self.update_graph_signal.emit()
 
@@ -74,9 +76,7 @@ class VisualizerTopoPlot(FigureCanvas):
     def update_plot(self):
         assert not self.graph_parameter_lock.locked()
         with self.graph_parameter_lock:
-            self.ax.clear()
-            im, cn = mne.viz.plot_topomap(self.mean_ch, self.raw.info,axes=self.ax ,show=False, names = self.channel_names)
-            self.cbar.update_normal(im)
+            self.cbar.update_normal(self.im)
         
             self.ax.figure.canvas.draw()
         

@@ -15,6 +15,7 @@ THETA_BAND = (4,8)
 ALPHA_BAND = (8,13)
 BETA_BAND = (13,30)
 GAMMA_BAND = (30,100)
+#Source: https://de.wikipedia.org/wiki/Elektroenzephalografie#EEG-Frequenzb%C3%A4nder_und_Graphoelemente
 
 @dataclass
 class Filter:
@@ -27,7 +28,6 @@ class Filter:
     Variable = [4,100] #per default cut Delta, but make it changeable -needs to be list since tuples are not changeable in python
 
 
-#Source: https://de.wikipedia.org/wiki/Elektroenzephalografie#EEG-Frequenzb%C3%A4nder_und_Graphoelemente
 
 class EEGProcessor:
     def __init__(self, lslhandler: LslHandler, stream : StreamInfo): #Must be called after connecting to EEG stream to get the layout
