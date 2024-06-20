@@ -365,15 +365,15 @@ class EegVisualizerMainWindow(QMainWindow):
 
         higher_freq_input.valueChanged.connect(self.handle_variable_filter_high_freq_change)
 
-        seconds_shown_input = QSpinBox()
-        seconds_shown_input.setRange(1, 100)
-        seconds_shown_input.setValue(DEFAULT_SECONDS_SHOWN)
-        seconds_shown_input.setStyleSheet("margin-top: 10px;")
-        seconds_shown_label = QLabel("Seconds Shown:")
-        seconds_shown_label.setStyleSheet("border: none;")
-        form_layout.addRow(seconds_shown_label, seconds_shown_input)
+        self.seconds_shown_input = QSpinBox()
+        self.seconds_shown_input.setRange(1, 100)
+        self.seconds_shown_input.setValue(DEFAULT_SECONDS_SHOWN)
+        self.seconds_shown_input.setStyleSheet("margin-top: 10px;")
+        self.seconds_shown_label = QLabel("Seconds Shown:")
+        self.seconds_shown_label.setStyleSheet("border: none;")
+        form_layout.addRow(self.seconds_shown_label, self.seconds_shown_input)
 
-        seconds_shown_input.valueChanged.connect(self.handle_seconds_shown_change)
+        self.seconds_shown_input.valueChanged.connect(self.handle_seconds_shown_change)
 
         window_size_exponent_input = QSpinBox()
         window_size_exponent_input.setRange(1, 15)
@@ -415,10 +415,14 @@ class EegVisualizerMainWindow(QMainWindow):
             widget_to_use_as_main_plot = self.visualizer_3d_wrapper_widget
             self.visualizer_topo.stop_and_wait_for_process_thread()
             self.visualizer_3d.start_thread()
+            self.seconds_shown_label.show()
+            self.seconds_shown_input.show()
         else:
             widget_to_use_as_main_plot = self.visualizer_topo
             self.visualizer_3d.stop_and_wait_for_process_thread()
             self.visualizer_topo.start_thread()
+            self.seconds_shown_label.hide()
+            self.seconds_shown_input.hide()
 
         if self.main_plot_container_layout.count() > 0:
             current_widget = self.main_plot_container_layout.itemAt(0).widget()
