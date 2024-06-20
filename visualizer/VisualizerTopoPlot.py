@@ -16,7 +16,9 @@ class VisualizerTopoPlot(FigureCanvas):
         self.eeg_processor = g.eeg_processor
         self.eeg_processor_lock = g.eeg_processor_lock
         self.window_size = g.DEFAULT_FFT_SAMPLES
-        self.channel_names = self.eeg_processor.get_eeg_layout()
+        with self.eeg_processor_lock:
+            self.channel_names = self.eeg_processor.get_eeg_layout()
+            self.sampling_frequency = self.eeg_processor.get_sampling_frequency()
         self.filter = Filter.NoNe
         self.initial_plot(parent)
 
@@ -27,20 +29,17 @@ class VisualizerTopoPlot(FigureCanvas):
         self.plotting_done = False
 
 
-        # self.timer = self.fig.canvas.new_timer(interval=g.GRAPH_UPDATE_PAUSE_S)  # Update every 50 ms
-        # self.timer.add_callback(self.update_plot)
-        # self.timer.start()
-    
     def initial_plot(self, parent):
         self.fig, self.ax = plt.subplots()
         super(VisualizerTopoPlot, self).__init__(self.fig)
         self.setParent(parent)
 
-        first_data = self.eeg_processor.get_specific_amount_of_eeg_samples_without_timestamps(self.window_size)
-        self.data = first_data
-        self.set_montage(first_data)
+        with self.eeg_processor_lock:
+            first_data = self.eeg_processor.get_specific_amount_of_eeg_samples_without_timestamps(self.window_size)
+            self.data = first_data
+            self.set_montage(first_data)
 
-        filtered_data = self.eeg_processor.filter_eeg_data(self.data, self.filter)
+            filtered_data = self.eeg_processor.filter_eeg_data(self.data, self.filter)
         mean_ch = np.mean(np.array(filtered_data), axis=0) 
 
         im, cn = mne.viz.plot_topomap(mean_ch, self.raw.info,axes=self.ax ,show=False, names = self.channel_names)
@@ -52,15 +51,16 @@ class VisualizerTopoPlot(FigureCanvas):
         while not self.thread_end_event.is_set():
             # print(f"thread: {datetime.now().time()}")
             with self.eeg_processor_lock:
-                new_data = g.eeg_processor.get_available_eeg_data_without_timestamps(self.window_size)
+                new_data = self.eeg_processor.get_available_eeg_data_without_timestamps(self.window_size)
+                if not new_data: continue
             
-            with self.graph_parameter_lock:
-                self.data = self.data[len(new_data):]
-                self.data += new_data
-                # print(len(self.data))
-                
-                filtered_data = self.eeg_processor.filter_eeg_data(self.data, self.filter)
-                self.mean_ch = np.mean(np.array(filtered_data), axis=0) 
+                with self.graph_parameter_lock:
+                    self.data = self.data[len(new_data):]
+                    self.data += new_data
+                    # print(len(self.data))
+                    
+                    filtered_data = self.eeg_processor.filter_eeg_data(self.data, self.filter)
+                    self.mean_ch = np.mean(np.array(filtered_data), axis=0) 
 
             self.update_graph_signal.emit()
 
@@ -72,14 +72,13 @@ class VisualizerTopoPlot(FigureCanvas):
             time.sleep(g.GRAPH_UPDATE_PAUSE_S)
 
     def update_plot(self):
-        # print(f"update: {datetime.now().time()}")
+        assert not self.graph_parameter_lock.locked()
         with self.graph_parameter_lock:
             self.ax.clear()
             im, cn = mne.viz.plot_topomap(self.mean_ch, self.raw.info,axes=self.ax ,show=False, names = self.channel_names)
             self.cbar.update_normal(im)
         
             self.ax.figure.canvas.draw()
-            self.ax.figure.canvas.flush_events()
         
         self.plotting_done_cond.acquire()
         self.plotting_done = True
@@ -92,7 +91,8 @@ class VisualizerTopoPlot(FigureCanvas):
                 self.data = self.data[:new_window_size]
             else:
                 size_to_additionally_append = new_window_size - self.window_size
-                self.data += g.eeg_processor.get_specific_amount_of_eeg_samples_without_timestamps(size_to_additionally_append)
+                with self.eeg_processor_lock:
+                    self.data += self.eeg_processor.get_specific_amount_of_eeg_samples_without_timestamps(size_to_additionally_append)
             self.window_size = new_window_size
 
     def set_filter(self, filter: Filter):
@@ -112,7 +112,7 @@ class VisualizerTopoPlot(FigureCanvas):
             assert(found)
         montage.ch_names = [montage.ch_names[i] for i in index_list]
         montage.dig = montage.dig[:3] + [montage.dig[i+3] for i in index_list]
-        info = mne.create_info(ch_names=montage.ch_names, sfreq=g.eeg_processor.get_sampling_frequency(), ch_types='eeg')  # sample rate
+        info = mne.create_info(ch_names=montage.ch_names, sfreq=self.sampling_frequency, ch_types='eeg')  # sample rate
 
         self.raw = mne.io.RawArray(np.array(data).T , info)
         # raw = mne.io.RawArray(mean_data.T, info)
