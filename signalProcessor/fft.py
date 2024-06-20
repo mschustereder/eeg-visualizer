@@ -6,7 +6,7 @@ def get_next_lowest_power_of_two(num):
 def calculate_fft(signal):
     window_length = len(signal)
     fft_result = np.fft.fft(signal, window_length)
-    fft_magnitude = np.abs(fft_result)
+    fft_magnitude = np.abs(fft_result)**2
     fft_magnitude_only_positive = fft_magnitude[:(window_length // 2)] # positive values are in first half
     fft_magnitude_normalized = fft_magnitude_only_positive / window_length
     return fft_magnitude_normalized
