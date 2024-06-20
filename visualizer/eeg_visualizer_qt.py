@@ -51,9 +51,9 @@ class CardWidget(QFrame):
         if content is not None:
             layout.addWidget(content)
 
-        content_container = QWidget()
-        content_container.setLayout(layout)
-        card_grid_layout.addWidget(content_container, 1, 0, 10, 1)
+        self.content_container = QWidget()
+        self.content_container.setLayout(layout)
+        card_grid_layout.addWidget(self.content_container, 1, 0, 10, 1)
         self.setLayout(card_grid_layout)
 
         self.setStyleSheet("""
@@ -64,6 +64,12 @@ class CardWidget(QFrame):
                 padding: 10px;
             }
         """)
+
+    def replace_content(self, new_content):
+        new_vbox_layout = QVBoxLayout()
+        new_vbox_layout.addWidget(new_content)
+        QWidget().setLayout(self.content_container.layout()) # 're-parent' the previous layout
+        self.content_container.setLayout(new_vbox_layout)
 
 def execute_qt_app():
     app = QApplication(sys.argv)
@@ -84,6 +90,7 @@ class EegVisualizerMainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
 
+        self.count_times_searched_for_lsl_streams = 0
         self.all_lsl_streams = None
 
         self.setWindowTitle("EEG Visualizer")
@@ -93,7 +100,7 @@ class EegVisualizerMainWindow(QMainWindow):
         self.central_layout = QVBoxLayout(self.central_widget)
 
         for i in range(3):
-            _ = self.get_all_lsl_streams(search_again=True)
+            self.search_for_lsl_streams_again()
 
         self.stream_selection_card = self.get_stream_selection_card()
 
@@ -155,7 +162,6 @@ class EegVisualizerMainWindow(QMainWindow):
         self.connect_to_selected_streams(self.selected_eeg_stream, self.selected_hr_stream, self.selected_rr_stream)
 
         current_widget = self.central_layout.itemAt(0).widget()
-        current_widget.hide()
         self.central_layout.removeWidget(current_widget)
 
         self.visualizer_3d, visualizer_3d_color_bar, self.visualizer_hr, self.visualizer_topo = EegVisualizerMainWindow.setup_visualizers_3d_and_hr()
@@ -195,7 +201,6 @@ class EegVisualizerMainWindow(QMainWindow):
         container_widget.setLayout(layout)
 
         self.central_layout.addWidget(container_widget)
-        container_widget.show()
 
     def setup_visualizers_3d_and_hr():
         visualizer_3d_color_bar = Visualizer3DColorBar()
@@ -206,9 +211,10 @@ class EegVisualizerMainWindow(QMainWindow):
         return visualizer_3d, visualizer_3d_color_bar, visualizer_hr, visualizer_topoplot
     
     def get_all_lsl_streams(self, search_again=False):
-        if not self.all_lsl_streams or search_again:
+        if (not self.all_lsl_streams and self.count_times_searched_for_lsl_streams < 3) or search_again:
             self.all_lsl_streams = gl.lsl_handler.get_all_lsl_streams()        
 
+        self.count_times_searched_for_lsl_streams += 1
         return self.all_lsl_streams
 
     def get_stream_selection_for(self, stream_type: StreamType):
@@ -243,9 +249,23 @@ class EegVisualizerMainWindow(QMainWindow):
 
         return stream_selection_container
     
-    def get_stream_selection_card(self):
+    def search_for_lsl_streams_again(self):
+        _ = self.get_all_lsl_streams(search_again=True)
 
+    def search_again_and_update_stream_selection_view(self):
+        self.search_for_lsl_streams_again()
+
+        new_content = self.build_content_for_stream_selection_card()
+
+        self.stream_selection_card.replace_content(new_content)
+
+    def build_content_for_stream_selection_card(self):
         layout = QVBoxLayout()
+
+        search_again_button = QPushButton("Search again")
+        search_again_button.clicked.connect(self.search_again_and_update_stream_selection_view)
+
+        layout.addWidget(search_again_button)
 
         start_button = QPushButton("Use selected streams")
         start_button.clicked.connect(self.show_main_layout)
@@ -258,10 +278,15 @@ class EegVisualizerMainWindow(QMainWindow):
 
         layout.addWidget(start_button)
 
-        container = QWidget()
-        container.setLayout(layout)
+        content = QWidget()
+        content.setLayout(layout)
 
-        stream_selection_card = CardWidget("Select LSL Stream", content=container, title_is_h1=True)
+        return content
+    
+    def get_stream_selection_card(self):
+        content = self.build_content_for_stream_selection_card()
+
+        stream_selection_card = CardWidget("Select LSL Stream", content=content, title_is_h1=True)
         return stream_selection_card
     
     def select_eeg_stream(self):
