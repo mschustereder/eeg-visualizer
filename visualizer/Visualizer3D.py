@@ -456,7 +456,9 @@ class Visualizer3DLine(Visualizer3D):
         if len(self.traces) < len(self.data.fft_vizualizer_values):
             diff = len(self.data.fft_vizualizer_values)-len(self.traces)
             for _ in range(len(self.traces), len(self.data.fft_vizualizer_values)):
-                self.traces.append(gl.GLLinePlotItem(width=2, antialias=True))
+                plt = gl.GLLinePlotItem(width=2, antialias=True)
+                plt.setGLOptions("opaque")
+                self.traces.append(plt)
                 self.setup_plot_item(self.traces[-1])
             # print(f"added {diff} traces")
 
