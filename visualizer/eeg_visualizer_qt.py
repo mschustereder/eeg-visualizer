@@ -1,4 +1,4 @@
-from PySide6.QtWidgets import QMainWindow, QGridLayout, QWidget, QVBoxLayout, QComboBox, QSizePolicy, QLabel, QFrame, QFormLayout, QRadioButton, QPushButton, QHBoxLayout, QSpinBox
+from PySide6.QtWidgets import QMainWindow, QGridLayout, QWidget, QVBoxLayout, QComboBox, QSizePolicy, QLabel, QFrame, QFormLayout, QRadioButton, QPushButton, QHBoxLayout, QSpinBox, QScrollArea
 from PySide6.QtCore import Qt, QSize
 from PySide6 import QtCore, QtGui
 import sys
@@ -237,13 +237,24 @@ class EegVisualizerMainWindow(QMainWindow):
         else:
             raise ValueError
         
+        radio_button_area = QWidget()
+        radio_button_vbox_layout = QVBoxLayout()
+        
         for stream in lsl_streams:
             new_radio_button = QRadioButton(stream.name())
-            stream_selection_layout.addWidget(new_radio_button)
+            radio_button_vbox_layout.addWidget(new_radio_button)
             new_radio_button.clicked.connect(callback_function)
 
         if len(lsl_streams) == 0:
-            stream_selection_layout.addWidget(QLabel("No streams found."))
+            radio_button_vbox_layout.addWidget(QLabel("No streams found."))
+
+        radio_button_area.setLayout(radio_button_vbox_layout)
+
+        scroll_area = QScrollArea()
+        scroll_area.setWidgetResizable(True)
+        scroll_area.setWidget(radio_button_area)
+
+        stream_selection_layout.addWidget(scroll_area)
 
         stream_selection_container.setLayout(stream_selection_layout)
 
