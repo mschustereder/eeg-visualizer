@@ -126,6 +126,7 @@ class Visualizer3D(gl.GLViewWidget):
         super().__init__()     
         self.setBackgroundColor(0, 0, 0)
         self.cm = cm
+        self.last_timestamp = 0
         self.color_bar = color_bar
         if self.color_bar is not None:
             self.color_bar.set_color_map(cm)
@@ -265,11 +266,12 @@ class Visualizer3D(gl.GLViewWidget):
 
                 #we want to get a spectrum every 100ms, so we will calulate overlapping fft windows, and thus use the fft_values_buffer as a FIFO buffer
                 self.data.fft_values_buffer = self.data.fft_values_buffer[-self.fft_buffer_len:] 
-                sample_time = data[1][-1] - data[1][0] #this is the time that has passed in the sample world
+                sample_time = data[1][-1] - self.last_timestamp #this is the time that has passed in the sample world
+                self.last_timestamp = data[1][-1]
                 fft_magnitude_normalized = fft.calculate_fft(self.data.fft_values_buffer)
                 self.prepare_data_for_plotting(fft_magnitude_normalized, sample_time)
                 self.scale_z()
-                self.data.colors = self.cm.map(np.array(self.data.fft_vizualizer_values)/np.amax(self.data.fft_vizualizer_values), pg.ColorMap.FLOAT)
+                self.data.colors = self.cm.map(np.array(self.data.fft_vizualizer_values)/self.max_value, pg.ColorMap.FLOAT)
                 self.update_spectrum_signal.emit()
                 self.graph_parameter_lock.release()
                 self.plotting_done_cond.acquire()
@@ -456,7 +458,9 @@ class Visualizer3DLine(Visualizer3D):
         if len(self.traces) < len(self.data.fft_vizualizer_values):
             diff = len(self.data.fft_vizualizer_values)-len(self.traces)
             for _ in range(len(self.traces), len(self.data.fft_vizualizer_values)):
-                self.traces.append(gl.GLLinePlotItem(width=2, antialias=True))
+                plt = gl.GLLinePlotItem(width=2, antialias=True)
+                plt.setGLOptions("opaque")
+                self.traces.append(plt)
                 self.setup_plot_item(self.traces[-1])
             # print(f"added {diff} traces")
 
