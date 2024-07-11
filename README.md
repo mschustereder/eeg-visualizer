@@ -37,7 +37,16 @@ python main.py
 ```
 
 ### Issues
-If you get an error where "from astropy.stats import LombScargle" fails, change the import line "from astropy.stats import LombScargle" in \venv\lib\site-packages\hrvanalysis\extract_features.py to "from astropy.timeseries import LombScargle"
+If you get an error where "from astropy.stats import LombScargle" fails, change the import line "from astropy.stats import LombScargle" in \venv\lib\site-packages\hrvanalysis\extract_features.py to "from astropy.timeseries import LombScargle" and afterwards source the venv again like so:
+
+- Windows:
+```
+.\venv\Scripts\activate
+```
+- Linux:
+```
+source venv/bin/activate
+```
 
 ### For developers
 - Do not push venv folder (is already added to .gitignore)

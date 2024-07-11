@@ -11,6 +11,7 @@ import visualizer.globals as gl
 from signalProcessor.EEGProcessor import EEGProcessor, Filter
 from signalProcessor.HRProcessor import HRProcessor
 from enum import Enum
+from visualizer.dark_stylesheet import *
 
 FONT_SIZE_H1 = 20
 FONT_SIZE_H2 = 18
@@ -55,11 +56,12 @@ class CardWidget(QFrame):
         card_grid_layout.addWidget(self.content_container, 1, 0, 10, 1)
         self.setLayout(card_grid_layout)
 
+                # border: 1px solid #d3d3d3;
         self.setStyleSheet("""
             QFrame {
-                border: 1px solid #d3d3d3;
+                border: 2px solid black;
                 border-radius: 2px;
-                background-color: white;
+                background-color: #2b2b2b;
                 padding: 10px;
             }
         """)
@@ -72,6 +74,8 @@ class CardWidget(QFrame):
 
 def execute_qt_app():
     app = QApplication(sys.argv)
+
+    app.setStyleSheet(dark_stylesheet)
 
     window = EegVisualizerMainWindow()
 
@@ -401,7 +405,7 @@ class EegVisualizerMainWindow(QMainWindow):
         self.handle_filter_change(self.FilterOptions.Manual_filter.value)
 
         self.seconds_shown_input = QSpinBox()
-        self.seconds_shown_input.setRange(1, 100)
+        self.seconds_shown_input.setRange(1, 60)
         self.seconds_shown_input.setValue(DEFAULT_SECONDS_SHOWN)
         self.seconds_shown_input.setStyleSheet("margin-top: 10px;")
         self.seconds_shown_label = QLabel("Seconds Shown:")
@@ -411,7 +415,7 @@ class EegVisualizerMainWindow(QMainWindow):
         self.seconds_shown_input.valueChanged.connect(self.handle_seconds_shown_change)
 
         window_size_exponent_input = QSpinBox()
-        window_size_exponent_input.setRange(1, 15)
+        window_size_exponent_input.setRange(6, 9)
         window_size_exponent_input.setValue(DEFAULT_WINDOW_SIZE_EXPONENT)
         window_size_exponent_input.setStyleSheet("margin-top: 10px;")
         window_size_exponent_label = QLabel("Window size exponent:")
