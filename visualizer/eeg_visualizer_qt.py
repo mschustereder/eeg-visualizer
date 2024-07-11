@@ -11,7 +11,7 @@ import visualizer.globals as gl
 from signalProcessor.EEGProcessor import EEGProcessor, Filter
 from signalProcessor.HRProcessor import HRProcessor
 from enum import Enum
-from visualizer.dark_stylesheet import *
+from visualizer.dark_stylesheet import dark_stylesheet
 
 FONT_SIZE_H1 = 20
 FONT_SIZE_H2 = 18
@@ -398,7 +398,8 @@ class EegVisualizerMainWindow(QMainWindow):
 
         self.manual_filter_selection_container.setLayout(manual_filter_selection_container_layout)
 
-        self.manual_filter_label = QLabel("Manual filter:")
+        self.manual_filter_label = QLabel("Manual filter: (ℹ️)")
+        self.manual_filter_label.setToolTip("The filters will only be set, if the lower cutoff is smaller than the higher cutoff!")
         self.manual_filter_label.setStyleSheet("border: none;")
         form_layout.addRow(self.manual_filter_label, self.manual_filter_selection_container)
 
@@ -534,7 +535,11 @@ class EegVisualizerMainWindow(QMainWindow):
 
 
     def handle_manual_filter_low_freq_change(self, lower_freq):
+        if lower_freq >= Filter.Manual[1]: return
+
         Filter.Manual[0] = lower_freq
 
     def handle_manual_filter_high_freq_change(self, higher_freq):
+        if higher_freq <= Filter.Manual[0]: return
+
         Filter.Manual[1] = higher_freq
