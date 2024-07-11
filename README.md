@@ -1,46 +1,45 @@
-## Shortcut usage:
+## Environment Setup (Shortcut):
 Requirements: 
 * git 
 * Python Interpreter (Version > 3.9)
 
-Copy paste the following code block into a terminal/shell in your desired folder where you want the project to run. Note that there is a possibilty that you have to change the ```python``` keyword of line 2 and 6 to ```python3``` or ```python.exe```- this depends on your installation of python and the configuration in the system environment variables.
+Copy paste the following code block into a terminal/shell in your desired folder where you want the project to run. Note that there is a possibilty that you have to change the ```python``` keyword to ```python3``` or ```python.exe```- this depends on your installation of python and the configuration in the system environment variables.
 ### Windows:
 ```
 git clone https://github.com/mschustereder/eeg-visualizer.git;
+cd eeg-visualizer;
 python -m venv venv;
 .\venv\Scripts\activate;
 pip install -r requirements.txt;
-./start_test_streams.sh;
-python main.py
 ```
 ### Linux:
 ```
 git clone https://github.com/mschustereder/eeg-visualizer.git;
+cd eeg-visualizer;
 python -m venv venv;
 source venv/bin/activate;
 pip install -r requirements.txt;
+```
+
+## Testing the application (Shortcut)
+### Windows:
+Run:
+```
+python stream.py;
+python main.py
+```
+
+### Linux:
+Run:
+```
 ./start_test_streams.sh;
 python main.py
 ```
 
-## Setting up the environment (explained version)
-### Steps for Windows:
-- Create Virtual Environment: ```python -m venv venv```
-- Activate Virtual Environment: ```.\venv\Scripts\activate```
-- Install Requirements: ```pip install -r requirements.txt```
+### Issues
+If you get an error where "from astropy.stats import LombScargle" fails, change this import line in \venv\lib\site-packages\hrvanalysis\extract_features.py to "from astropy.timeseries import LombScargle"
 
-
-### Steps for Linux:
-- Create Virtual Environment: ```python -m venv venv```
-- Activate Virtual Environment: ```source venv/bin/activate```
-- Install Requirements: ```pip install -r requirements.txt```
-
-
-### Other remarks
-
-- If you get an error where "from astropy.stats import LombScargle" fails, change this import line in \venv\lib\site-packages\hrvanalysis\extract_features.py to "from astropy.timeseries import LombScargle"
-
-For developers: 
+### For developers
 - Do not push venv folder (is already added to .gitignore)
 - If new packages are added or updated, do so with pip in the directory of the venv and update requirements.txt: ```pip freeze > requirements.txt```
 
@@ -53,7 +52,7 @@ We have to differentiate between Offline and Online usage. In the Offline Enviro
 In the xdfStreamer folder you can find 3 XDF files, which can be used to test the application. "bitbrain_eeg_recording.xdf" is a Bitbrain 16-channel (250Hz) EEG ecording of a resting human being. To compare this meaningful data to a useless recording there is also a "Noise_eeg_recording.xdf" which was recorded on the same Bitbrain EEG simply laying on the table. The third XDF file is called "Hr_recording.xdf" and holds heart related data recorded with a chest strap of a resting human being.
 
 1. Start the streams - Options:
-    * Call ```./start_test_streams.sh``` in the root directory: this will start streaming "bitbrain_eeg_recording.xdf" and "Hr_recording.xdf". The filenames can be changed to custom files.
+    * Call ```./start_test_streams.sh```(Linux) or ```python stream.py```(Windows) in the root directory: this will start streaming "bitbrain_eeg_recording.xdf" and "Hr_recording.xdf". The filenames can be changed to custom files by changing the path in the respective run scripts.
     * Start the streams manually by calling ```python xdfStreamer/xdfStreamer.py <file_directory> -c``` for the EEG stream and ``` python xdfStreamer/xdfStreamer.py <file_directory> -hr -c``` for the heart stream. The ```-c``` (continous) option repeats the streams once they end, and can be neglected if not wanted. 
 
 2. Start the application:
