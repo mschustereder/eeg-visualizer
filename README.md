@@ -29,7 +29,7 @@ In the xdfStreamer folder you can find 3 XDF files, which can be used to test th
 
 1. Start the streams - Options:
     * Call ```./start_test_streams.sh``` in the root directory: this will start streaming "bitbrain_eeg_recording.xdf" and "Hr_recording.xdf". The filenames can be changed to custom files.
-    * Start the streams manually by calling ```xdfStreamer/xdfStreamer.py <file_directory> -c``` for the EEG stream and ```xdfStreamer/xdfStreamer.py <file_directory> -hr -c``` for the heart stream. The ```-c``` (continous) option repeats the streams once they end, and can be neglected if not wanted. 
+    * Start the streams manually by calling ```python xdfStreamer/xdfStreamer.py <file_directory> -c``` for the EEG stream and ``` python xdfStreamer/xdfStreamer.py <file_directory> -hr -c``` for the heart stream. The ```-c``` (continous) option repeats the streams once they end, and can be neglected if not wanted. 
 
 2. Start the application:
     * Execute the main.py by calling ```python main.py``` or using the IDE to run the python script. 
@@ -44,8 +44,8 @@ In the xdfStreamer folder you can find 3 XDF files, which can be used to test th
 1. Start the EEG stream:
     * Based on the EEG application find a way to stream the data via LSL. We used a Bitbrain EEG - with this device the steps to follow are:
         * Start the Bitbrain Viewer Software
-        * Connect the EEG via Bluetooth with your PC, laptop
-        * Click connect and select your EEG from the list
+        * Connect the EEG via Bluetooth with your PC or laptop
+        * Click "connect" and select your EEG from the list
         * Tick the "Enable LSL server" checkbox
         * Click "Start"
 
@@ -55,7 +55,7 @@ In the xdfStreamer folder you can find 3 XDF files, which can be used to test th
 3. Start the application:
     * Execute the main.py by calling ```python main.py``` or using the IDE to run the python script. 
 
-4. Selcet the correct streams:
+4. Select the correct streams:
     * After a short waiting period a prompt appears where one can select the correct stream for EEG, HR and RR. If they do not appear immediately click "Search again".
 
 5. Use the UI to change the parameters.
