@@ -116,7 +116,6 @@ class Visualizer3D(gl.GLViewWidget):
     update_spectrum_signal = QtCore.Signal()
     loading_buffer_start_signal = QtCore.Signal()
     loading_buffer_end_signal = QtCore.Signal()
-    # eeg_processor : EEGProcessor
     #the values for x, y and z than can be seen from the camera
     x_range = 48
     y_range = 40

@@ -36,7 +36,7 @@ class LslHandler:
         inlet = self.active_streams[stream]
         samples, timestamps = inlet.pull_chunk(timeout = 0.0, max_samples = max_samples)
         if not samples: return None,None
-        # data_with_timestamps = self._zip_samples_and_timestamps(samples, timestamps)
+
         if inlet.samples_available() > SAMPLE_COUNT_MAX_QUEUE:
             nr_of_flushed_samples = inlet.flush()
             print(f"Warning: Throwing away {nr_of_flushed_samples} samples")
@@ -64,11 +64,6 @@ class LslHandler:
     def get_specific_amount_of_samples_without_timestamps(self, stream: StreamInfo, required_sample_count) -> List[List[float]]:
         samples, _ = self.get_specific_amount_of_samples(stream, required_sample_count)
         return samples
-
-    # def _zip_samples_and_timestamps(self, samples : List[List[float]], timestamps : List[float])  -> List[Tuple[List[float], float]]:
-    #     data_with_timestamps = []
-    #     data_with_timestamps.extend(zip(samples, timestamps))
-    #     return data_with_timestamps
    
     def get_stream_by_name(self, name):
         for stream in self.active_streams:

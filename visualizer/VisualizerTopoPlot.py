@@ -49,7 +49,6 @@ class VisualizerTopoPlot(FigureCanvas):
 
     def data_processing_thread(self):
         while not self.thread_end_event.is_set():
-            # print(f"thread: {datetime.now().time()}")
             with self.eeg_processor_lock:
                 new_data = self.eeg_processor.get_specific_amount_of_eeg_samples_without_timestamps(self.window_size //4)
                 if not new_data: continue
@@ -57,7 +56,6 @@ class VisualizerTopoPlot(FigureCanvas):
                 with self.graph_parameter_lock:
                     self.data = self.data[len(new_data):]
                     self.data += new_data
-                    # print(len(self.data))
                     
                     filtered_data = self.eeg_processor.filter_eeg_data(self.data, self.filter)
                     self.mean_ch = np.mean(np.array(filtered_data), axis=0) 
@@ -100,8 +98,8 @@ class VisualizerTopoPlot(FigureCanvas):
             self.filter = filter
         
     def set_montage(self, data):
-        montage = mne.channels.make_standard_montage(g.USED_MNE_MONTAGE)  # set a montage, see mne document
-        index_list = []  # correspond channel
+        montage = mne.channels.make_standard_montage(g.USED_MNE_MONTAGE)  # set a montage, changebale in gloabls.py
+        index_list = []  
         for ch_name in self.channel_names:
             found = False
             for index, biosemi_name in enumerate(montage.ch_names):
@@ -112,10 +110,9 @@ class VisualizerTopoPlot(FigureCanvas):
             assert(found)
         montage.ch_names = [montage.ch_names[i] for i in index_list]
         montage.dig = montage.dig[:3] + [montage.dig[i+3] for i in index_list]
-        info = mne.create_info(ch_names=montage.ch_names, sfreq=self.sampling_frequency, ch_types='eeg')  # sample rate
+        info = mne.create_info(ch_names=montage.ch_names, sfreq=self.sampling_frequency, ch_types='eeg') 
 
         self.raw = mne.io.RawArray(np.array(data).T , info)
-        # raw = mne.io.RawArray(mean_data.T, info)
         self.raw.set_montage(montage)
 
     def stop_and_wait_for_process_thread(self):
