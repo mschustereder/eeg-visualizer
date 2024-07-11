@@ -416,7 +416,7 @@ class EegVisualizerMainWindow(QMainWindow):
         self.seconds_shown_input.valueChanged.connect(self.handle_seconds_shown_change)
 
         window_size_exponent_input = QSpinBox()
-        window_size_exponent_input.setRange(6, 9)
+        window_size_exponent_input.setRange(6, 11)
         window_size_exponent_input.setValue(DEFAULT_WINDOW_SIZE_EXPONENT)
         window_size_exponent_input.setStyleSheet("margin-top: 10px;")
         window_size_exponent_label = QLabel("Window size exponent:")
