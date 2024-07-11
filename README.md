@@ -1,4 +1,29 @@
-## Setting up the environment 
+## Shortcut usage:
+Requirements: 
+* git 
+* Python Interpreter (Version > 3.9)
+
+Copy paste the following code block into a terminal/shell in your desired folder where you want the project to run. Note that there is a possibilty that you have to change the ```python``` keyword of line 2 and 6 to ```python3``` or ```python.exe```- this depends on your installation of python and the configuration in the system environment variables.
+### Windows:
+```
+git clone https://github.com/mschustereder/eeg-visualizer.git;
+python -m venv venv;
+.\venv\Scripts\activate;
+pip install -r requirements.txt;
+./start_test_streams.sh;
+python main.py
+```
+### Linux:
+```
+git clone https://github.com/mschustereder/eeg-visualizer.git;
+python -m venv venv;
+source venv/bin/activate;
+pip install -r requirements.txt;
+./start_test_streams.sh;
+python main.py
+```
+
+## Setting up the environment (explained version)
 ### Steps for Windows:
 - Create Virtual Environment: ```python -m venv venv```
 - Activate Virtual Environment: ```.\venv\Scripts\activate```
@@ -69,13 +94,3 @@ The montage can be changed in globals.py with the USED_MNE_MONTAGE constant.
 
 There is also the possibilty to try to read the channels info from the lsl stream which can be done by setting the global variable GET_LAYOUT_FROM_JSON to False. Note that for this to work, the channel names need to be configured beforehand.
 
-## Programming the UI
-
-### pyside6-designer
-
-We are using the ```pyside6-designer```-tool. The following commands are important:
-
-- Start the designer: ```pyside6-designer```
-- Open a specific .ui-file in the designer: ```pyside6-designer <ui-file-name>.ui```
-- Convert specific .ui-file to a python file: ```pyside6-uic <ui-file-name>.ui -o <wanted-python-file-name>.py```
-- In our case: Convert .ui-file to the python file: ```pyside6-uic visualizer/visualizer.ui -o visualizer/visualizer.py```
