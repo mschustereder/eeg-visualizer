@@ -1,15 +1,12 @@
 ## Environment Setup (Shortcut):
+Open a terminal/shell in the folder where you want the project. Copy paste the following code block into the terminal/shell. Note that there is a possibilty that you have to change the ```python``` keyword to ```python3``` or ```python.exe```- this depends on your installation of python and the configuration in the system environment variables.
 
-
-
-Copy paste the following code block into a terminal/shell in your desired folder where you want the project to run. Note that there is a possibilty that you have to change the ```python``` keyword to ```python3``` or ```python.exe```- this depends on your installation of python and the configuration in the system environment variables.
 ### Windows:
 Requirements: 
 * git 
 * Python Interpreter (Version > 3.9)
 
-Open a terminal/shell in the folder where you want the project. Copy paste the following code block into the terminal/shell. Note that there is a possibilty that you have to change the ```python``` keyword to ```python3``` or ```python.exe```- this depends on your installation of python and the configuration in the system environment variables.
-### Windows:
+
 ```
 git clone https://github.com/mschustereder/eeg-visualizer.git;
 cd eeg-visualizer;
