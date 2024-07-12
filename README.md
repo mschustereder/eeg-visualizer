@@ -1,10 +1,13 @@
 ## Environment Setup (Shortcut):
+
+
+
+Copy paste the following code block into a terminal/shell in your desired folder where you want the project to run. Note that there is a possibilty that you have to change the ```python``` keyword to ```python3``` or ```python.exe```- this depends on your installation of python and the configuration in the system environment variables.
+### Windows:
 Requirements: 
 * git 
 * Python Interpreter (Version > 3.9)
 
-Copy paste the following code block into a terminal/shell in your desired folder where you want the project to run. Note that there is a possibilty that you have to change the ```python``` keyword to ```python3``` or ```python.exe```- this depends on your installation of python and the configuration in the system environment variables.
-### Windows:
 ```
 git clone https://github.com/mschustereder/eeg-visualizer.git;
 cd eeg-visualizer;
@@ -13,6 +16,11 @@ python -m venv venv;
 pip install -r requirements.txt;
 ```
 ### Linux:
+Requirements: 
+* git 
+* Python Interpreter (Version > 3.9)
+* Virtual Environment: If your are using Virtual Environments for the first time call ```sudo apt-get install python<version_number_of_your_python_interpreter>-venv``` with the correct verison number
+
 ```
 git clone https://github.com/mschustereder/eeg-visualizer.git;
 cd eeg-visualizer;
@@ -20,6 +28,7 @@ python -m venv venv;
 source venv/bin/activate;
 pip install -r requirements.txt;
 ```
+You also have to install a dynamically linked library (DLL) in Linux. The .deb file is in de xdfStreamer folder and can be installed with ```sudo dpkg -i xdfStreamer/liblsl-1.16.2-jammy_amd64.deb```. If it fails because of dependencies try ```sudo apt-get install -f``` and try to install the DLL again.
 
 ## Testing the application (Shortcut)
 ### Windows:
