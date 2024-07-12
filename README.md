@@ -8,6 +8,8 @@ Requirements:
 * git 
 * Python Interpreter (Version > 3.9)
 
+Open a terminal/shell in the folder where you want the project. Copy paste the following code block into the terminal/shell. Note that there is a possibilty that you have to change the ```python``` keyword to ```python3``` or ```python.exe```- this depends on your installation of python and the configuration in the system environment variables.
+### Windows:
 ```
 git clone https://github.com/mschustereder/eeg-visualizer.git;
 cd eeg-visualizer;
@@ -46,7 +48,16 @@ python main.py
 ```
 
 ### Issues
-If you get an error where "from astropy.stats import LombScargle" fails, change the import line "from astropy.stats import LombScargle" in \venv\lib\site-packages\hrvanalysis\extract_features.py to "from astropy.timeseries import LombScargle"
+If you get an error where "from astropy.stats import LombScargle" fails, change the import line "from astropy.stats import LombScargle" in \venv\lib\site-packages\hrvanalysis\extract_features.py to "from astropy.timeseries import LombScargle" and afterwards source the venv again like so:
+
+- Windows:
+```
+.\venv\Scripts\activate
+```
+- Linux:
+```
+source venv/bin/activate
+```
 
 ### For developers
 - Do not push venv folder (is already added to .gitignore)
@@ -58,7 +69,7 @@ We have to differentiate between Offline and Online usage. In the Offline Enviro
 
 ### Offline Usage
 
-In the xdfStreamer folder you can find 3 XDF files, which can be used to test the application. "bitbrain_eeg_recording.xdf" is a Bitbrain 16-channel (250Hz) EEG recording of a resting human being. To compare this meaningful data to a useless recording there is also a "Noise_eeg_recording.xdf" which was recorded on the same Bitbrain EEG simply laying on the table. The third XDF file is called "Hr_recording.xdf" and holds heart related data recorded with a chest strap of a resting human being.
+In the xdfStreamer folder you can find 3 XDF files, which can be used to test the application. "bitbrain_eeg_recording.xdf" is a Bitbrain 16-channel (250Hz) EEG recording of a resting human being. To compare this meaningful data to a meaningless recording there is also a "Noise_eeg_recording.xdf" which was recorded on the same Bitbrain EEG simply laying on the table. The third XDF file is called "Hr_recording.xdf" and holds heart related data recorded with a chest strap of a resting human being.
 
 1. Start the streams - Options:
     * Call ```./start_test_streams.sh```(Linux) or ```python stream.py```(Windows) in the root directory: this will start streaming "bitbrain_eeg_recording.xdf" and "Hr_recording.xdf". The filenames can be changed to custom files by changing the path in the respective run scripts.
@@ -67,7 +78,7 @@ In the xdfStreamer folder you can find 3 XDF files, which can be used to test th
 2. Start the application:
     * Execute the main.py by calling ```python main.py``` or using the IDE to run the python script. 
 
-3. Selcet the correct streams:
+3. Select the correct streams:
     * After a short waiting period a prompt appears where one can select the correct stream for EEG, HR and RR. If they do not appear immediately click "Search again".
 
 4. Use the UI to change the parameters.
